@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define variables
-APP_DIR="./energy-efficiency-dataset/files"  # Replace with the path to your app directory
+APP_DIR="/files"  # Replace with the path to your app directory
 MAIN_APP_FILE="/streamlit/app/pages/homepage.py"  # Replace with your main Streamlit app file
 VENV_DIR="$APP_DIR/venv"  # Virtual environment directory
 
