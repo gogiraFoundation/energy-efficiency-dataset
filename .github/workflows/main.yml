@@ -53,6 +53,6 @@ jobs:
       run: |
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
-        git add log/streamlit_health.log
+        git add log/health-check/
         git commit -m "Update health logs [skip ci]" || echo "No changes to commit"
         git push
