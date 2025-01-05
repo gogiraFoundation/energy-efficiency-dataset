@@ -28,7 +28,7 @@ jobs:
       run: chmod +x setup/deploy_streamlit.sh
 
     - name: Deploy Streamlit App
-      run: ./setup/deploy_streamlit.sh
+      run: ./deploy_streamlit.sh
 
     - name: Verify Deployment (Optional)
       run: curl -I http://localhost:8501
