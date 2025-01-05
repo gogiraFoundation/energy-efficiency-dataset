@@ -25,10 +25,10 @@ jobs:
         pip install -r setup/requirements.txt
 
     - name: Make deploy script executable
-      run: chmod +x deploy_streamlit.sh
+      run: chmod +x setup/deploy_streamlit.sh
 
     - name: Deploy Streamlit App
-      run: ./deploy_streamlit.sh
+      run: ./setup/deploy_streamlit.sh
 
     - name: Verify Deployment (Optional)
       run: curl -I http://localhost:8501
