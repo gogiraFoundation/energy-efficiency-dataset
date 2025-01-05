@@ -2,7 +2,7 @@
 
 # Define variables
 APP_DIR="files/"  # Replace with the path to your app directory
-MAIN_APP_FILE="streamlit/app/pages/homepage.py"  # Replace with your main Streamlit app file
+MAIN_APP_FILE="streamlit/app/pages/homepage.py"
 VENV_DIR="$APP_DIR/venv"  # Virtual environment directory
 PORT=8501
 ADDRESS="0.0.0.0"  # Allow external access
