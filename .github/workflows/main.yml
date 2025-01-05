@@ -1,9 +1,8 @@
-name: Deploy Streamlit App
-
+name: Deploy and Monitor Streamlit App
 on:
   push:
     branches:
-      - main  # Deploy when code is pushed to the main branch
+      - main  # Deploy only when pushing to the main branch
   workflow_dispatch:  # Allow manual triggering
 
 jobs:
@@ -11,24 +10,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Step 1: Checkout Code
     - name: Checkout Code
       uses: actions/checkout@v3
 
+    # Step 2: Set up Python Environment
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9' 
+        python-version: '3.9'
 
     - name: Install Dependencies
       run: |
-        python -m pip install --upgrade pip
+        python -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
         pip install -r setup/requirements.txt
 
-    - name: Make deploy script executable
+    # Step 3: Make Deploy Script Executable
+    - name: Make Deploy Script Executable
       run: chmod +x deploy_streamlit.sh
 
+    # Step 4: Deploy Streamlit App
     - name: Deploy Streamlit App
       run: ./deploy_streamlit.sh
 
-    - name: Verify Deployment (Optional)
+    # Step 5: Set up and Start Monitoring
+    - name: Set Up Monitoring
+      run: |
+        chmod +x monitor_streamlit.sh
+        mkdir -p log
+        nohup ./monitor_streamlit.sh &
+
+    # Step 6: Verify Deployment
+    - name: Verify Deployment
       run: curl -I http://localhost:8501
+
+    # Step 7: Commit Logs to Repository
+    - name: Commit Logs to Repository
+      if: always()
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add log/streamlit_health.log
+        git commit -m "Update health logs [skip ci]" || echo "No changes to commit"
+        git push
