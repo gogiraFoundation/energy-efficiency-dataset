@@ -22,13 +22,13 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r energy-efficiency-dataset/setup/requirements.txt
+        pip install -r setup/requirements.txt
 
     - name: Make deploy script executable
       run: chmod +x deploy_streamlit.sh
 
     - name: Deploy Streamlit App
-      run: ./energy-efficiency-dataset/setup/deploy_streamlit.sh
+      run: ./deploy_streamlit.sh
 
     - name: Verify Deployment (Optional)
       run: curl -I http://localhost:8501
