@@ -26,10 +26,6 @@ fi
 echo_message "Activating virtual environment..."
 source "$VENV_DIR/bin/activate" || { echo "Failed to activate virtual environment!"; exit 1; }
 
-# Install dependencies
-echo_message "Installing dependencies..."
-pip install --upgrade pip
-pip install -r requirements.txt || { echo "Failed to install dependencies!"; exit 1; }
 
 # Run the Streamlit app
 echo_message "Launching Streamlit app..."
