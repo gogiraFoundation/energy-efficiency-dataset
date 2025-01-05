@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define variables
-APP_DIR="/files"  # Replace with the path to your app directory
-MAIN_APP_FILE="/streamlit/app/pages/homepage.py"  # Replace with your main Streamlit app file
+APP_DIR="files/"  # Replace with the path to your app directory
+MAIN_APP_FILE="streamlit/app/pages/homepage.py"  # Replace with your main Streamlit app file
 VENV_DIR="$APP_DIR/venv"  # Virtual environment directory
 
 # Function to display messages
