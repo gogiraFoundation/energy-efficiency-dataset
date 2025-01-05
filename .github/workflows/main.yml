@@ -34,7 +34,7 @@ jobs:
     # Set up and Start Monitoring
     - name: Set Up Monitoring
       run: |
-        chmod +x monitor_streamlit.sh
+        chmod +x health_check.sh
         mkdir -p log
         nohup ./health_check.sh &
 
