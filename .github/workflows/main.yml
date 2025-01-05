@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout Code
+    # Checkout Code
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    # Step 2: Set up Python Environment
+    # Set up Python Environment
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -27,26 +27,27 @@ jobs:
         pip install --upgrade pip
         pip install -r setup/requirements.txt
 
-    # Step 3: Make Deploy Script Executable
+    # Make Deploy Script Executable
     - name: Make Deploy Script Executable
       run: chmod +x deploy_streamlit.sh
-
-    # Step 4: Deploy Streamlit App
-    - name: Deploy Streamlit App
-      run: ./deploy_streamlit.sh
-
-    # Step 5: Set up and Start Monitoring
+    
+    # Set up and Start Monitoring
     - name: Set Up Monitoring
       run: |
         chmod +x monitor_streamlit.sh
         mkdir -p log
         nohup ./health_check.sh &
 
-    # Step 6: Verify Deployment
+    # Deploy Streamlit App
+    - name: Deploy Streamlit App
+      run: ./deploy_streamlit.sh
+
+      
+    # Verify Deployment
     - name: Verify Deployment
       run: curl -I http://localhost:8501
 
-    # Step 7: Commit Logs to Repository
+    # Commit Logs to Repository
     - name: Commit Logs to Repository
       if: always()
       run: |
