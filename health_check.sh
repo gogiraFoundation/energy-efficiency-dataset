@@ -13,7 +13,7 @@ APP_URL="http://localhost:8501"    # URL of the Streamlit app
 THRESHOLD=5                        # Number of failures before sending alert
 CHECK_INTERVAL=30                  # Interval between checks in seconds
 LOG_DIR="log"                      # Directory to store logs
-LOG_FILE="$LOG_DIR/streamlit_health.log"  # Log file name
+LOG_FILE="$LOG_DIR/health-check/streamlit_health.log"  # Log file name
 ALERT_EMAIL="$EMAIL"               # Alert email from the .env file
 
 # Ensure log directory exists
