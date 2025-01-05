@@ -35,7 +35,7 @@ def action_handler(user_action, option, data):
         else:
             st.warning("Please upload a valid dataset or use the default dataset.")
     elif user_action == "No":
-        main_handler()
+        main_handler(option, data)
 
 def sidebar(default_file_path):
     """Handles the sidebar UI and dataset loading."""
@@ -61,6 +61,7 @@ def sidebar(default_file_path):
             try:
                 # Load uploaded file
                 uploaded_dataframe = pd.read_csv(uploaded_file)
+                st.write(uploaded_dataframe)
                 st.session_state.data = uploaded_dataframe
                 st.success("Uploaded dataset loaded successfully!")
             except Exception as e:

@@ -13,6 +13,7 @@ from sklearn.preprocessing import StandardScaler
 
 def user_home(data):
     st.title("Energy Efficiency Analysis")
+    st.table(data.head())
     
     # Check if data is None or not a pandas DataFrame
     if not isinstance(data, pd.DataFrame):
@@ -85,5 +86,7 @@ def user_home(data):
 
 
 # Main function to control the flow
-def user_main(data, option):
-    user_home(data)
+def user_main(option, data):
+    uploaded_data = data
+    user_option = option
+    user_home(uploaded_data)
