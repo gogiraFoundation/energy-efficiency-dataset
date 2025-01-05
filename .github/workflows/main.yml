@@ -40,7 +40,7 @@ jobs:
       run: |
         chmod +x monitor_streamlit.sh
         mkdir -p log
-        nohup ./monitor_streamlit.sh &
+        nohup ./health_check.sh &
 
     # Step 6: Verify Deployment
     - name: Verify Deployment
