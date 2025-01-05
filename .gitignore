@@ -44,3 +44,9 @@ dist/
 *.xls
 *.db
 *.sqlite
+
+
+
+# secret files
+
+secret.py
