@@ -41,6 +41,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Verify Python and pip in the virtual environment
+echo_message "Verifying Python and pip in the virtual environment..."
+python --version || { echo_message "Error: Python not found in virtual environment!"; exit 1; }
+pip --version || { echo_message "Error: pip not found in virtual environment!"; exit 1; }
+
 # Install dependencies (if requirements.txt exists)
 if [ -f "requirements.txt" ]; then
     echo_message "Installing dependencies..."
@@ -52,6 +57,17 @@ if [ -f "requirements.txt" ]; then
     fi
 else
     echo_message "Warning: requirements.txt not found. Skipping dependency installation."
+fi
+
+# Check if Streamlit is installed
+if ! command -v streamlit &>/dev/null; then
+    echo_message "Streamlit is not installed. Installing Streamlit..."
+    pip install streamlit
+    if [ $? -ne 0 ]; then
+        echo_message "Error: Failed to install Streamlit!"
+        deactivate
+        exit 1
+    fi
 fi
 
 # Run the Streamlit app
