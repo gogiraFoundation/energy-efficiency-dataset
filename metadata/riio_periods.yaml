@@ -1,0 +1,48 @@
+# RIIO regulatory periods for UK energy networks.
+#
+# `start_fy_end_year` is the calendar year that ends the first regulatory year
+# (e.g. RIIO-T1 Year 1 = FY 2013/14 -> end calendar year 2014).
+# `end_fy_end_year` marks the calendar year ending the final regulatory year.
+# These are used to translate "Year N" or "13/14" header tokens in the Ofgem
+# xlsx exports into a single annual `year` integer for downstream modelling.
+#
+# Year n -> calendar year = start_fy_end_year + (n - 1).
+
+schemes:
+  T1:
+    long_name: RIIO-T1 (Electricity & Gas Transmission, 8-year price control)
+    sectors: [Electricity Transmission, Gas Transmission]
+    start_fy_end_year: 2014
+    end_fy_end_year: 2021
+    duration_years: 8
+
+  ED1:
+    long_name: RIIO-ED1 (Electricity Distribution, 8-year price control)
+    sectors: [Electricity Distribution]
+    start_fy_end_year: 2016
+    end_fy_end_year: 2023
+    duration_years: 8
+
+  GD1:
+    long_name: RIIO-GD1 (Gas Distribution, 8-year price control)
+    sectors: [Gas Distribution]
+    start_fy_end_year: 2014
+    end_fy_end_year: 2021
+    duration_years: 8
+
+# Map FY label fragments (e.g. "13/14", "2013-14", "2013 - 14") to the
+# end calendar year. The loader uses these as a fast lookup before falling
+# back to regex parsing.
+fy_label_to_end_year:
+  "13/14": 2014
+  "14/15": 2015
+  "15/16": 2016
+  "16/17": 2017
+  "17/18": 2018
+  "18/19": 2019
+  "19/20": 2020
+  "20/21": 2021
+  "21/22": 2022
+  "22/23": 2023
+  "23/24": 2024
+  "24/25": 2025

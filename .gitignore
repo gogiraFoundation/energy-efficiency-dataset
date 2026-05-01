@@ -35,6 +35,7 @@ dist/
 # Sensitive files
 *.env
 .env.*
+!.env.example
 
 # Data files
 *.csv
@@ -43,6 +44,7 @@ dist/
 *.xls
 *.db
 *.sqlite
+!metadata/*.csv
 
 
 

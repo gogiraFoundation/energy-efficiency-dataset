@@ -1,0 +1,1443 @@
+# Registry of the 38 Ofgem Data Portal xlsx files in data/ofgem_data_portal_xlsx/.
+#
+# Each entry tells pipeline/ingest/load_xlsx.py:
+#   - which raw_xlsx_* table the rows belong in
+#   - which network_sector tag to attach
+#   - the RIIO scheme (used to translate "Year N" -> calendar year)
+#   - which parser strategy to use
+#   - parser-specific configuration
+#
+# Parser strategies (handled in load_xlsx.py):
+#   wide_period_metric  : entity in col 0; remaining columns encode (period, kind)
+#                         via `column_pattern` regex with named groups.
+#                         `kind_metric_map` translates the regex `kind` group
+#                         into a canonical metric name. If `period` is a Year N
+#                         token, the scheme is used to compute calendar year.
+#                         If `period` is an FY token (13/14, 2013-14), it is
+#                         resolved via metadata/riio_periods.yaml directly.
+#   year_label_long     : col 0 is a year/FY label, every other column is a
+#                         metric. `metric_map` renames headers to canonical.
+#   columnar_snapshot   : no period dimension in the data; an explicit
+#                         `snapshot_year` is used. col 0 is entity, remaining
+#                         cols are metrics renamed via `metric_map`.
+#   time_series_long    : col 0 is a date string; other cols are metrics. Date
+#                         parsed via `date_format`. Loader records the date and
+#                         a derived integer year for annual roll-ups.
+#   multi_year_unpivot  : col 0 is a date or week index. Each subsequent column
+#                         header encodes a year via `year_pattern`. Output has
+#                         one row per (period_index, year, value) for the
+#                         single metric `metric_name`.
+
+defaults:
+  data_dir: data/ofgem_data_portal_xlsx
+  sheet_name: Sheet1
+  header_row: 0       # 0-indexed
+  data_start_row: 1   # 0-indexed
+
+files:
+
+  # ============================================================
+  # ELECTRICITY DISTRIBUTION (RIIO-ED1)
+  # ============================================================
+
+  - file: Average_time_to_connect_to_the_network_Electricity_distribution_RIIO-ED1.xlsx
+    raw_table: raw_xlsx_connections
+    network_sector: Electricity Distribution
+    scheme: ED1
+    parser: columnar_snapshot
+    snapshot_year: 2020       # header references "(2019/20)" -> end FY 2020
+    entity_column_index: 0
+    metric_map:
+      "LVSSA target": connection_lvssa_target_days
+      "LVSSA (2019/20)": connection_lvssa_actual_days
+      "LVSSB target": connection_lvssb_target_days
+      "LVSSB (2019/20)": connection_lvssb_actual_days
+    unit: days
+
+  - file: Customer_interruptions_and_minutes_lost_Electricity_distribution_RIIO-ED1.xlsx
+    raw_table: raw_xlsx_reliability
+    network_sector: Electricity Distribution
+    scheme: ED1
+    parser: columnar_snapshot
+    snapshot_year: 2020
+    entity_column_index: 0
+    metric_map:
+      "Target for customers interrupted": customer_interruptions_target
+      "Actual number of customers interrupted": customer_interruptions
+      "Target average minutes lost": minutes_lost_target
+      "Actual average minutes lost": minutes_lost
+    metric_map_substring: true   # match by header substring
+    unit: count_or_minutes
+
+  - file: Customer_satisfaction_with_network_operators_Electricity_distribution_RIIO-ED1.xlsx
+    raw_table: raw_xlsx_customer_satisfaction
+    network_sector: Electricity Distribution
+    scheme: ED1
+    parser: columnar_snapshot
+    snapshot_year: 2020
+    entity_column_index: 0
+    metric_map:
+      "Stakeholder engagement incentive reward score": stakeholder_engagement_score
+      "Customer survey score": customer_survey_score
+    metric_map_substring: true
+    unit: score
+
+  - file: Expenditure_vs_allowance_Electricity_distribution_RIIO-ED1.xlsx
+    raw_table: raw_xlsx_expenditure
+    network_sector: Electricity Distribution
+    scheme: ED1
+    parser: wide_period_metric
+    entity_column_index: 0
+    column_pattern: '^Year\s+(?P<period>\d+)\s+(?P<kind>expenditure|allowance)$'
+    kind_metric_map:
+      expenditure: actual_totex_million_gbp
+      allowance: totex_allowance_million_gbp
+    unit: million_GBP
+
+  - file: Return_on_regulatory_equity_Electricity_distribution_RIIO-ED1.xlsx
+    raw_table: raw_xlsx_rore
+    network_sector: Electricity Distribution
+    scheme: ED1
+    parser: columnar_snapshot
+    snapshot_year: 2023       # 8-year RIIO-ED1 view ends 2023
+    entity_column_index: 0
+    metric_map:
+      "Current eight year view": rore_pct
+    metric_map_substring: true
+    unit: percent
+
+  - file: Undergrounding_of_overhead_lines_Electricity_distribution_RIIO-ED1.xlsx
+    raw_table: raw_xlsx_undergrounding
+    network_sector: Electricity Distribution
+    scheme: ED1
+    parser: columnar_snapshot
+    snapshot_year: 2023
+    entity_column_index: 0
+    metric_map:
+      "Length of installations (km)": undergrounding_km
+    unit: km
+
+  # ============================================================
+  # ELECTRICITY TRANSMISSION (RIIO-T1)
+  # ============================================================
+
+  - file: Customer_satisfaction_with_network_owners_Electricity_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_customer_satisfaction
+    network_sector: Electricity Transmission
+    scheme: T1
+    parser: wide_period_metric
+    entity_column_index: 0
+    column_pattern: '^Year\s+(?P<period>\d+)\s+(?P<kind>.+)$'
+    kind_metric_map_substring: true
+    kind_metric_map:
+      "stakeholder engagement": stakeholder_engagement_score
+      "stakeholder survey": stakeholder_survey_score
+      "customer survey": customer_survey_score
+    unit: score
+
+  - file: Expenditure_vs_allowance_Electricity_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_expenditure
+    network_sector: Electricity Transmission
+    scheme: T1
+    parser: wide_period_metric
+    entity_column_index: 0
+    column_pattern: '^Year\s+(?P<period>\d+)\s+(?P<kind>expenditure|allowance)$'
+    kind_metric_map:
+      expenditure: actual_totex_million_gbp
+      allowance: totex_allowance_million_gbp
+    value_multiplier: 1000.0      # source values look like £bn -> convert to £m
+    unit: million_GBP
+
+  - file: Network_connections_by_transmission_owners_Electricity_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_connections
+    network_sector: Electricity Transmission
+    scheme: T1
+    parser: wide_period_metric
+    entity_column_index: 0
+    column_pattern: '^Year\s+(?P<period>\d+)\s+(?P<kind>not on time|on time)$'
+    kind_metric_map:
+      "on time": connections_on_time_count
+      "not on time": connections_late_count
+    unit: count
+
+  - file: Return_on_regulatory_equity_Electricity_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_rore
+    network_sector: Electricity Transmission
+    scheme: T1
+    parser: columnar_snapshot
+    snapshot_year: 2021
+    entity_column_index: 0
+    metric_map:
+      "Current eight-year view": rore_pct
+    metric_map_substring: true
+    unit: percent
+
+  - file: Sulphur_Hexafluoride_SF6_emissions_Electricity_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_emissions
+    network_sector: Electricity Transmission
+    scheme: T1
+    parser: wide_period_metric
+    entity_column_index: 0
+    column_pattern: '^Y(?P<period>\d+)\s+(?P<kind>Actual|Target)\s+emissions$'
+    kind_metric_map:
+      Actual: sf6_kg
+      Target: sf6_target_kg
+    unit: kg
+
+  - file: Volume_of_energy_not_supplied_Electricity_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_reliability
+    network_sector: Electricity Transmission
+    scheme: T1
+    parser: wide_period_metric
+    entity_column_index: 0
+    column_pattern: '^Year\s+(?P<period>\d+)\s+(?P<kind>actual|target)$'
+    kind_metric_map:
+      actual: ens_mwh
+      target: ens_target_mwh
+    unit: MWh
+
+  # ============================================================
+  # GAS TRANSMISSION (RIIO-T1)
+  # ============================================================
+
+  - file: Business_carbon_footprint_Gas_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_emissions
+    network_sector: Gas Transmission
+    scheme: T1
+    parser: year_label_long
+    entity_column_index: 0
+    fixed_company_name: National Grid Gas Transmission
+    metric_map:
+      "Scope 1": ghg_scope1_tco2e
+      "Scope 2": ghg_scope2_tco2e
+      "Scope 3": ghg_scope3_tco2e
+    unit: tCO2e
+
+  - file: Customer_satisfaction_Gas_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_customer_satisfaction
+    network_sector: Gas Transmission
+    scheme: T1
+    parser: year_label_long
+    entity_column_index: 0
+    fixed_company_name: National Grid Gas Transmission
+    metric_map:
+      "stakeholder engagement": stakeholder_engagement_score
+      "stakeholder survey": stakeholder_survey_score
+      "customer survey": customer_survey_score
+    metric_map_substring: true
+    unit: score
+
+  - file: Expenditure_vs_allowance_Gas_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_expenditure
+    network_sector: Gas Transmission
+    scheme: T1
+    parser: year_label_long
+    entity_column_index: 0
+    fixed_company_name: National Grid Gas Transmission
+    metric_map:
+      "Allowance": totex_allowance_million_gbp
+      "Expenditure": actual_totex_million_gbp
+    metric_map_substring: true
+    unit: million_GBP
+
+  - file: Network_connections_Gas_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_connections
+    network_sector: Gas Transmission
+    scheme: T1
+    parser: year_label_long
+    entity_column_index: 0
+    fixed_company_name: National Grid Gas Transmission
+    metric_map:
+      "Connection Offers Received": connection_offers_received
+      "Offers made or processing": connection_offers_processed
+    metric_map_substring: true
+    unit: count
+
+  - file: Network_reliability_Gas_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_reliability
+    network_sector: Gas Transmission
+    scheme: T1
+    parser: year_label_long
+    entity_column_index: 0
+    fixed_company_name: National Grid Gas Transmission
+    metric_map:
+      "Target": gas_reliability_target_pct
+      "Actual": gas_reliability_pct
+    unit: percent
+
+  - file: Return_on_regulatory_equity_Gas_transmission_RIIO-T1.xlsx
+    raw_table: raw_xlsx_rore
+    network_sector: Gas Transmission
+    scheme: T1
+    parser: columnar_snapshot
+    snapshot_year: 2021
+    entity_column_index: 0
+    metric_map:
+      "Current eight-year view": rore_pct
+    metric_map_substring: true
+    unit: percent
+
+  # ============================================================
+  # GAS DISTRIBUTION (RIIO-GD1)
+  # ============================================================
+
+  - file: Customer_satisfaction_with_network_owners_Gas_distribution_RIIO-GD1.xlsx
+    raw_table: raw_xlsx_customer_satisfaction
+    network_sector: Gas Distribution
+    scheme: GD1
+    parser: wide_period_metric
+    entity_column_index: 0
+    column_pattern: '^(?P<kind>SEIRS|AVCSC)\s+(?P<fy>\d+/\d+)$'
+    period_from_fy: true
+    kind_metric_map:
+      SEIRS: stakeholder_engagement_score
+      AVCSC: customer_survey_score
+    unit: score
+
+  - file: Expenditure_vs_allowance_Gas_distribution_RIIO-GD1.xlsx
+    raw_table: raw_xlsx_expenditure
+    network_sector: Gas Distribution
+    scheme: GD1
+    parser: wide_period_metric
+    entity_column_index: 0
+    column_pattern: '^Y(?P<period>\d+)\s+(?P<kind>Expenditure|Allowance)$'
+    kind_metric_map:
+      Expenditure: actual_totex_million_gbp
+      Allowance: totex_allowance_million_gbp
+    unit: million_GBP
+
+  - file: Fuel_poor_connections_Gas_distribution_RIIO-GD1.xlsx
+    raw_table: raw_xlsx_fuel_poor
+    network_sector: Gas Distribution
+    scheme: GD1
+    parser: columnar_snapshot
+    snapshot_year: 2021       # 7-year cumulative through end of GD1
+    entity_column_index: 0
+    metric_map:
+      "Commitment (7 year cumulative)": fuel_poor_connections_target
+      "Actual (7 year cumulative)": fuel_poor_connections_actual
+    unit: count
+
+  - file: Network_availability_Gas_distribution_RIIO-GD1.xlsx
+    raw_table: raw_xlsx_network_availability
+    network_sector: Gas Distribution
+    scheme: GD1
+    parser: wide_period_metric
+    entity_column_index: 0
+    column_pattern: '^Year\s+(?P<period>\d+)\s+\([\d\-]+\)$'
+    kind_metric_map:
+      "_default": network_availability_pct
+    unit: percent
+
+  - file: Return_on_regulatory_equity_Gas_distribution_RIIO-GD1.xlsx
+    raw_table: raw_xlsx_rore
+    network_sector: Gas Distribution
+    scheme: GD1
+    parser: columnar_snapshot
+    snapshot_year: 2021
+    entity_column_index: 0
+    metric_map:
+      "Current eight-year view": rore_pct
+    metric_map_substring: true
+    unit: percent
+
+  - file: Risk_removed_from_the_network_Gas_distribution_RIIO-GD1.xlsx
+    raw_table: raw_xlsx_risk_reduction
+    network_sector: Gas Distribution
+    scheme: GD1
+    parser: columnar_snapshot
+    snapshot_year: 2021
+    entity_column_index: 0
+    metric_map:
+      "Proportionate risk reduction": gas_risk_reduction_target
+      "Actual Risk reduction": gas_risk_reduction_actual
+    unit: risk_units
+
+  - file: Volume_of_gas_lost_from_the_distribution_network_RIIO-GD1.xlsx
+    raw_table: raw_xlsx_reliability
+    network_sector: Gas Distribution
+    scheme: GD1
+    parser: wide_period_metric
+    entity_column_index: 0
+    column_pattern: '^(?P<kind>Target|Actual)\s+(?P<fy>\d+/\d+)$'
+    period_from_fy: true
+    kind_metric_map:
+      Actual: gas_lost_volume
+      Target: gas_lost_target_volume
+    unit: GWh
+
+  # ============================================================
+  # GB MARKET CONTEXT (no RIIO scheme)
+  # ============================================================
+
+  - file: Electricity_bid-offer_spreads_by_contract_type_GB.xlsx
+    raw_table: raw_xlsx_market_prices
+    network_sector: Electricity Wholesale
+    scheme: null
+    parser: multi_year_unpivot
+    entity_column_index: 0          # Isoweeknum
+    period_kind: isoweek
+    year_pattern: '(?P<year>\d{4})|all years pre-(?P<year_pre>\d{4})'
+    pre_year_label: pre_2021
+    metric_name: bid_offer_spread
+    commodity: electricity
+    unit: GBP_per_MWh
+
+  - file: Electricity_generation_mix_by_quarter_and_fuel_source_GB.xlsx
+    raw_table: raw_xlsx_generation_mix
+    network_sector: Electricity Wholesale
+    scheme: null
+    parser: time_series_long
+    entity_column_index: 0
+    date_format: quarterly        # "Q1 1998" style
+    fuel_columns_as_metric: true
+    default_metric_name: generation_share_twh
+    commodity: electricity
+    unit: TWh
+
+  - file: Electricity_trading_volumes_and_churn_ratio_by_month_and_platform_GB.xlsx
+    raw_table: raw_xlsx_market_volumes
+    network_sector: Electricity Wholesale
+    scheme: null
+    parser: time_series_long
+    entity_column_index: 0
+    date_format: dayfirst
+    default_metric_name: trading_volume_twh
+    commodity: electricity
+    unit: TWh_or_ratio
+
+  - file: Estimated_network_costs_per_domestic_customer_GB_average.xlsx
+    raw_table: raw_xlsx_estimated_costs
+    network_sector: All
+    scheme: null
+    parser: time_series_long
+    entity_column_index: 0
+    date_format: month_year_short    # "Apr-15"
+    commodity: all
+    metric_map:
+      "Electricity (transmission)": cost_per_customer_et_gbp
+      "Electricity (distribution)": cost_per_customer_ed_gbp
+      "Gas (transmission)": cost_per_customer_gt_gbp
+      "Gas (distribution)": cost_per_customer_gd_gbp
+    unit: GBP_per_year
+
+  - file: Gas_Prices_Day_Ahead_Contracts_-_Monthly_Average_GB.xlsx
+    raw_table: raw_xlsx_market_prices
+    network_sector: Gas Wholesale
+    scheme: null
+    parser: time_series_long
+    entity_column_index: 0
+    date_format: dayfirst
+    metric_map:
+      "Price": gas_day_ahead_price
+    commodity: gas
+    unit: pence_per_therm
+
+  - file: Gas_bid-offer_spreads_by_contract_type_GB.xlsx
+    raw_table: raw_xlsx_market_prices
+    network_sector: Gas Wholesale
+    scheme: null
+    parser: multi_year_unpivot
+    entity_column_index: 0
+    period_kind: isoweek
+    year_pattern: '(?P<year>\d{4})|all years pre-(?P<year_pre>\d{4})'
+    pre_year_label: pre_2021
+    metric_name: bid_offer_spread
+    commodity: gas
+    unit: pence_per_therm
+
+  - file: Gas_demand_and_supply_source_by_month_GB.xlsx
+    raw_table: raw_xlsx_gas_supply
+    network_sector: Gas Wholesale
+    scheme: null
+    parser: time_series_long
+    entity_column_index: 0
+    date_format: dayfirst
+    default_metric_name: gas_supply_volume_mcm
+    commodity: gas
+    unit: mcm_per_day
+
+  - file: Gas_summer-winter_spreads_at_the_National_Balancing_Point_GB.xlsx
+    raw_table: raw_xlsx_market_prices
+    network_sector: Gas Wholesale
+    scheme: null
+    parser: multi_year_unpivot
+    entity_column_index: 0
+    period_kind: date_dayfirst
+    year_pattern: '(?P<year>\d{4})\s*-\s*\d{2,4}'
+    metric_name: summer_winter_spread
+    commodity: gas
+    unit: pence_per_therm
+
+  - file: Gas_trading_volumes_and_monthly_churn_ratio_by_platform_GB.xlsx
+    raw_table: raw_xlsx_market_volumes
+    network_sector: Gas Wholesale
+    scheme: null
+    parser: time_series_long
+    entity_column_index: 0
+    date_format: dayfirst
+    default_metric_name: trading_volume_twh
+    commodity: gas
+    unit: TWh_or_ratio
+
+  - file: Prepayment_price_cap_and_prices_since_January_2016_GB.xlsx
+    raw_table: raw_xlsx_estimated_costs
+    network_sector: Retail
+    scheme: null
+    parser: time_series_long
+    entity_column_index: 0
+    date_format: us_dayfirst       # MM/DD/YYYY in this file
+    commodity: all
+    metric_map:
+      "SVT - prepayment": prepayment_svt_market_avg_gbp
+      "Cheapest tariff": prepayment_cheapest_gbp
+      "Prepayment price cap": prepayment_price_cap_gbp
+    metric_map_substring: true
+    unit: GBP_per_year
+
+  - file: Price_volatility_of_gas_and_electricity_by_month_Day-ahead_contracts_GB.xlsx
+    raw_table: raw_xlsx_market_prices
+    network_sector: All
+    scheme: null
+    parser: time_series_long
+    entity_column_index: 0
+    date_format: dayfirst
+    metric_map:
+      "Electricity (baseload)": volatility_electricity_baseload
+      "Electricity (peakload)": volatility_electricity_peakload
+      "Gas": volatility_gas
+    commodity: all
+    unit: index
+
+  - file: Spark_and_dark_spreads_GB.xlsx
+    raw_table: raw_xlsx_market_prices
+    network_sector: Electricity Wholesale
+    scheme: null
+    parser: time_series_long
+    entity_column_index: 0
+    date_format: dayfirst
+    metric_map:
+      "Spark (low efficiency)": spark_spread_low
+      "Spark (central efficiency)": spark_spread_central
+      "Spark (high efficiency)": spark_spread_high
+      "Dark": dark_spread
+      "Power price (baseload)": power_price_baseload
+    commodity: electricity
+    unit: GBP_per_MWh
+
+  - file: Wholesale_electricity_generation_market_shares_by_company_in_2024_GB.xlsx
+    raw_table: raw_xlsx_generation_share
+    network_sector: Electricity Wholesale
+    scheme: null
+    parser: columnar_snapshot
+    snapshot_year: 2024
+    entity_column_index: 0
+    metric_map:
+      "share_perc": generation_market_share_pct
+    unit: percent
+
+  # ============================================================================
+  # RETAIL & CONSUMER (data/ofgem_data_portal_xlsx_facet_1609_supply_retail/)
+  #
+  # Three new parser strategies are used:
+  #   period_supplier_matrix    period in col 0; columns are supplier names
+  #   period_dimension_matrix   period in col 0; columns map to fixed dim values
+  #   category_aspect_snapshot  no period; col 0 is category/aspect/component
+  #
+  # Note: Prepayment_price_cap_and_prices_since_January_2016_GB.xlsx is already
+  # ingested by the wholesale market section above and is intentionally skipped.
+  # ============================================================================
+
+  # ----- Supplier financial: profits, margins -----
+  - file: Aggregate_profits_in_supply_segment.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: aggregate_profit_billion_gbp
+    column_dimension_map:
+      "Total supply":        {segment: supply_aggregate}
+      "Domestic supply":     {segment: domestic}
+      "Non-domestic supply": {segment: non_domestic}
+    unit: billion_GBP
+
+  - file: Aggregate_profits_of_the_large_legacy_energy_suppliers_Generation_and_supply_million.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: large_legacy_aggregate_profit_million_gbp
+    column_dimension_map:
+      "Generation":           {segment: generation}
+      "Domestic supply":      {segment: domestic}
+      "Non-domestic supply":  {segment: non_domestic}
+    unit: million_GBP
+
+  - file: Domestic_supply_profits_in_million_by_supplier.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: profit_million_gbp
+    segment: domestic
+    unit: million_GBP
+
+  - file: Non-domestic_supply_profits_in_million_by_supplier.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: profit_million_gbp
+    segment: non_domestic
+    unit: million_GBP
+
+  - file: Generation_profits_in_million_by_supplier.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: profit_million_gbp
+    segment: generation
+    unit: million_GBP
+
+  - file: Pre-tax_domestic_supply_margins_of_large_legacy_suppliers_combined_gas_and_electricity.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: pretax_domestic_margin_pct
+    segment: domestic
+    unit: percent
+
+  - file: Large_legacy_suppliers_Domestic_dual_fuel_bill_breakdown_over_time.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: bill_component_gbp
+    dimensions: {commodity: dual_fuel, supplier_group: large_legacy}
+    column_dimension_substring: true
+    column_dimension_map:
+      "Wholesale":      {component: wholesale}
+      "Direct costs":   {component: direct_costs}
+      "Network":        {component: network}
+      "Environmental":  {component: environmental_social}
+      "Other direct":   {component: other_direct}
+      "Operating":      {component: operating}
+      "EBIT":           {component: ebit}
+      "VAT":            {component: vat}
+      "Bill":           {component: total_bill}
+    unit: GBP
+
+  - file: Supplier_Cost_Index_by_fuel_type_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: month_year_short
+    entity_column_index: 0
+    metric_name: supplier_cost_index_jan15_100
+    column_dimension_map:
+      "Dual Fuel":   {commodity: dual_fuel}
+      "Electricity": {commodity: electricity}
+      "Gas":         {commodity: gas}
+    unit: index
+
+  - file: Breakdown_of_the_year-on-year_change_in_the_Supplier_Cost_Index.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2018
+    entity_role: component
+    entity_column_index: 0
+    metric_name: cost_index_yoy_impact_pct
+    unit: percent
+
+  # ----- Consumer debt & vulnerability -----
+  - file: Average_debt_level_where_there_is_no_arrangement_to_repay_the_debt_arrears.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: avg_debt_no_arrangement_gbp
+    column_dimension_map:
+      "Electricity": {commodity: electricity}
+      "Gas":         {commodity: gas}
+    unit: GBP
+
+  - file: Average_level_of_debt_remaining_where_there_is_an_arrangement_to_repay_the_debt.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: avg_debt_with_arrangement_gbp
+    column_dimension_map:
+      "Electricity": {commodity: electricity}
+      "Gas":         {commodity: gas}
+    unit: GBP
+
+  - file: Number_of_accounts_in_arrears_where_there_is_no_arrangement_to_repay_the_debt.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: accounts_in_arrears_no_arrangement
+    column_dimension_substring: true
+    column_dimension_map:
+      "Electricity": {commodity: electricity}
+      "Gas":         {commodity: gas}
+    unit: count
+
+  - file: Number_of_accounts_with_a_consumer_repaying_an_energy_debt.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: accounts_repaying_debt
+    column_dimension_map:
+      "Electricity": {commodity: electricity}
+      "Gas":         {commodity: gas}
+    unit: count
+
+  - file: The_proportion_of_customers_repaying_a_debt_to_their_supplier_using_a_prepayment_meter_PPM.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: ppm_debt_repayment_share_pct
+    dimensions: {payment_method: prepayment}
+    column_dimension_map:
+      "Electricity": {commodity: electricity}
+      "Gas":         {commodity: gas}
+    unit: percent
+
+  - file: Total_financial_value_of_domestic_customer_debt_and_arrears_existing_for_more_than_91_days.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: debt_value_gt91_days_billion_gbp
+    dimensions: {commodity: dual_fuel}
+    column_dimension_substring: true
+    column_dimension_map:
+      "Total debt":           {component: debt}
+      "Total arrears":        {component: arrears}
+      "Total Debt and Arrears": {component: debt_plus_arrears}
+    unit: billion_GBP
+
+  - file: Electricity_prepayment_PPM_customers_Average_length_of_debt_repayment_plans_agreed_weeks.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    metric_name: avg_repayment_plan_weeks
+    dimensions: {commodity: electricity, payment_method: prepayment}
+    unit: weeks
+
+  - file: Gas_prepayment_PPM_customers_Average_length_of_debt_repayment_plans_agreed_weeks.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    metric_name: avg_repayment_plan_weeks
+    dimensions: {commodity: gas, payment_method: prepayment}
+    unit: weeks
+
+  - file: Electricity_prepayment_meter_customers_Average_weekly_debt_repayment_rates.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    metric_name: avg_weekly_repayment_gbp
+    dimensions: {commodity: electricity, payment_method: prepayment}
+    unit: GBP_per_week
+
+  - file: Gas_prepayment_meter_customers_Average_weekly_debt_repayment_rates.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    metric_name: avg_weekly_repayment_gbp
+    dimensions: {commodity: gas, payment_method: prepayment}
+    unit: GBP_per_week
+
+  # ----- Disconnections & smart-PPM self-disconnection -----
+  - file: Number_of_disconnections_for_non-payment_of_debt.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: disconnections_for_debt
+    column_dimension_map:
+      "Electricity": {commodity: electricity}
+      "Gas":         {commodity: gas}
+    unit: count
+
+  - file: Electricity_suppliers_Disconnections_for_debt_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    metric_name: disconnections_for_debt
+    dimensions: {commodity: electricity}
+    unit: count
+
+  - file: Gas_suppliers_Disconnections_for_debt_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    metric_name: disconnections_for_debt
+    dimensions: {commodity: gas}
+    unit: count
+
+  - file: Total_number_of_domestic_smart_prepayment_meter_customer_self-disconnections.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: smart_ppm_self_disconnect_events
+    dimensions: {payment_method: smart_prepayment}
+    column_dimension_map:
+      "Electricity": {commodity: electricity}
+      "Gas":         {commodity: gas}
+    unit: count
+
+  - file: Number_of_domestic_smart_prepayment_meter_smart-PPM_customers_self-disconnecting_at_least_once.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    dimensions: {payment_method: smart_prepayment}
+    column_dimension_substring: true
+    column_dimension_map:
+      "Number of Electricity customers self-disconnecting at least once for more than 3 hours": {commodity: electricity, metric_name: smart_ppm_self_disconnect_customers_gt3h}
+      "Number of Electricity customers self-disconnecting at least once":                       {commodity: electricity, metric_name: smart_ppm_self_disconnect_customers}
+      "Number of Gas customers self-disconnecting at least once for more than 3 hours":         {commodity: gas, metric_name: smart_ppm_self_disconnect_customers_gt3h}
+      "Number of Gas customers self-disconnecting at least once":                                {commodity: gas, metric_name: smart_ppm_self_disconnect_customers}
+    unit: count
+
+  # ----- Switching & competition -----
+  - file: Average_switching_time_for_domestic_customers_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: dayfirst
+    entity_column_index: 0
+    metric_name: avg_switching_time_days
+    column_dimension_substring: true
+    column_dimension_map:
+      "electricity switching time": {commodity: electricity}
+      "gas switching time":         {commodity: gas}
+    unit: days
+
+  - file: Number_of_domestic_customers_switching_supplier_by_fuel_type_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: dayfirst
+    entity_column_index: 0
+    column_dimension_substring: true
+    column_dimension_map:
+      "Total electricity switches":                  {commodity: electricity, metric_name: total_switches}
+      "Total gas switches":                          {commodity: gas, metric_name: total_switches}
+      "Switches to electricity other suppliers":     {commodity: electricity, metric_name: switches_to_other_suppliers}
+      "Switches to gas other suppliers":             {commodity: gas, metric_name: switches_to_other_suppliers}
+      "Net gains for electricity other suppliers":   {commodity: electricity, metric_name: net_gains_other_suppliers}
+      "Net gains for gas other suppliers":           {commodity: gas, metric_name: net_gains_other_suppliers}
+    unit: count
+
+  - file: Large_suppliers_Internal_and_external_switching_rate_by_fuel_type_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: month_year_short
+    entity_column_index: 0
+    dimensions: {supplier_size: large}
+    column_dimension_substring: true
+    column_dimension_map:
+      "Electricity total internal switching rate":      {commodity: electricity, metric_name: switching_rate_internal_total_pct}
+      "Gas total internal switching rate":              {commodity: gas, metric_name: switching_rate_internal_total_pct}
+      "Electricity total external switching rate":      {commodity: electricity, metric_name: switching_rate_external_total_pct}
+      "Gas total external switching rate":              {commodity: gas, metric_name: switching_rate_external_total_pct}
+      "Electricity internal switching rate by tariff":  {commodity: electricity, metric_name: switching_rate_internal_by_tariff_pct}
+      "Gas internal switching rate by tariff":          {commodity: gas, metric_name: switching_rate_internal_by_tariff_pct}
+    unit: percent
+
+  - file: Number_of_active_domestic_suppliers_by_fuel_type_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: month_year_short
+    entity_column_index: 0
+    metric_name: active_suppliers
+    column_dimension_map:
+      "Gas":                  {commodity: gas}
+      "Electricity":          {commodity: electricity}
+      "Gas and electricity":  {commodity: dual_fuel}
+      "Total":                {commodity: total}
+    unit: count
+
+  - file: Supplier_entries_and_exits_in_the_domestic_energy_retail_market_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    column_dimension_map:
+      "Supplier entries":            {metric_name: supplier_entries}
+      "Supplier exits":              {metric_name: supplier_exits}
+      "Continuing active suppliers": {metric_name: continuing_active}
+    unit: count
+
+  # ----- Tariffs, price cap & affordability -----
+  - file: Cheapest_tariffs_by_payment_method_Typical_domestic_dual_fuel_customer_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: us_dayfirst
+    entity_column_index: 0
+    metric_name: cheapest_tariff_gbp_per_year
+    dimensions: {commodity: dual_fuel, tariff_type: cheapest}
+    column_dimension_map:
+      "Large legacy suppliers (direct debit)":    {payment_method: direct_debit, supplier_group: large_legacy}
+      "Large legacy suppliers (standard credit)": {payment_method: standard_credit, supplier_group: large_legacy}
+      "Large legacy suppliers (prepayment)":      {payment_method: prepayment, supplier_group: large_legacy}
+      "Market (direct debit)":                    {payment_method: direct_debit, supplier_group: market}
+      "Market (standard credit)":                 {payment_method: standard_credit, supplier_group: market}
+      "Market (prepayment)":                      {payment_method: prepayment, supplier_group: market}
+    unit: GBP_per_year
+
+  - file: Retail_price_comparison_by_company_and_tariff_type_Domestic_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: us_dayfirst
+    entity_column_index: 0
+    metric_name: tariff_price_gbp_per_year
+    dimensions: {commodity: dual_fuel}
+    column_dimension_map:
+      "Average standard variable tariff (Large legacy suppliers)": {tariff_type: svt_average, supplier_group: large_legacy}
+      "Average standard variable tariff (Other suppliers)":         {tariff_type: svt_average, supplier_group: other}
+      "Average fixed tariff":                                       {tariff_type: fixed_average, supplier_group: market}
+      "Cheapest tariff (Large legacy suppliers)":                   {tariff_type: cheapest, supplier_group: large_legacy}
+      "Cheapest tariff (All suppliers)":                            {tariff_type: cheapest, supplier_group: market}
+      "Cheapest tariff (Basket)":                                   {tariff_type: cheapest_basket, supplier_group: market}
+      "Default tariff cap level":                                   {tariff_type: default_cap, supplier_group: market}
+    unit: GBP_per_year
+
+  - file: Average_tariff_prices_by_supplier_Standard_variable_and_fixed_default_vs_cheapest_available_tariffs_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    column_dimension_map:
+      "Supplier's average annual standard variable tariff": {tariff_type: svt_supplier, metric_name: tariff_price_gbp_per_year}
+      "Supplier's cheapest annual average tariff":          {tariff_type: cheapest_supplier, metric_name: tariff_price_gbp_per_year}
+      "Market cheapest annual average tariff":              {tariff_type: cheapest_market, metric_name: tariff_price_gbp_per_year}
+      "Default tariff cap":                                 {tariff_type: default_cap, metric_name: tariff_price_gbp_per_year}
+    dimensions: {commodity: dual_fuel}
+    unit: GBP_per_year
+
+  - file: Costs_included_in_price_cap_level_payment_by_Direct_Debit_January_2019_to_June_2026.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: half_year
+    entity_column_index: 0
+    metric_name: price_cap_component_gbp
+    dimensions: {commodity: dual_fuel, payment_method: direct_debit}
+    column_dimension_substring: true
+    column_dimension_map:
+      "Wholesale":             {component: wholesale}
+      "Adjustment allowance":  {component: adjustment}
+      "Network":               {component: network}
+      "Policy":                {component: policy}
+      "Operating Costs and Industry Charges": {component: operating_industry_charges}
+      "Operating costs":       {component: operating}
+      "Debt Related":          {component: debt_related}
+      "Earnings Before Interest": {component: ebit}
+      "EBIT":                  {component: ebit}
+      "VAT":                   {component: vat}
+      "Direct debit payment method uplift": {component: payment_method_uplift}
+      "Headroom":              {component: headroom}
+      "Levelisation":          {component: levelisation}
+      "Total":                 {component: total}
+    unit: GBP_per_year
+
+  - file: Costs_included_in_price_cap_level_payment_by_prepayment_January_2019_to_June_2026.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: half_year
+    entity_column_index: 0
+    metric_name: price_cap_component_gbp
+    dimensions: {commodity: dual_fuel, payment_method: prepayment}
+    column_dimension_substring: true
+    column_dimension_map:
+      "Wholesale":             {component: wholesale}
+      "Adjustment allowance":  {component: adjustment}
+      "Network":               {component: network}
+      "Policy":                {component: policy}
+      "Operating Costs and Industry Charges": {component: operating_industry_charges}
+      "Operating costs":       {component: operating}
+      "Debt Related":          {component: debt_related}
+      "Prepayment payment method uplift": {component: payment_method_uplift}
+      "EBIT":                  {component: ebit}
+      "Headroom":              {component: headroom}
+      "Levelisation":          {component: levelisation}
+      "VAT":                   {component: vat}
+      "Total":                 {component: total}
+    unit: GBP_per_year
+
+  - file: Costs_included_in_price_cap_level_payment_by_standard_credit_January_2019_to_June_2026.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: half_year
+    entity_column_index: 0
+    metric_name: price_cap_component_gbp
+    dimensions: {commodity: dual_fuel, payment_method: standard_credit}
+    column_dimension_substring: true
+    column_dimension_map:
+      "Wholesale":             {component: wholesale}
+      "Adjustment allowance":  {component: adjustment}
+      "Network":               {component: network}
+      "Policy":                {component: policy}
+      "Operating Costs and Industry Charges": {component: operating_industry_charges}
+      "Operating costs":       {component: operating}
+      "Debt Related":          {component: debt_related}
+      "Earnings Before Interest": {component: ebit}
+      "VAT":                   {component: vat}
+      "Standard credit payment method uplift": {component: payment_method_uplift}
+      "Headroom":              {component: headroom}
+      "Total":                 {component: total}
+    unit: GBP_per_year
+
+  - file: Breakdown_of_a_dual_fuel_bill.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: component
+    entity_column_index: 0
+    metric_name: bill_breakdown_pct
+    dimensions: {commodity: dual_fuel}
+    unit: percent
+
+  - file: Breakdown_of_a_gas_bill.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: component
+    entity_column_index: 0
+    metric_name: bill_breakdown_pct
+    dimensions: {commodity: gas}
+    unit: percent
+
+  - file: Breakdown_of_an_electricity_bill.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: component
+    entity_column_index: 0
+    metric_name: bill_breakdown_pct
+    dimensions: {commodity: electricity}
+    unit: percent
+
+  - file: Energy_spend_as_a_percentage_of_total_household_expenditure_UK.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: household_energy_spend_pct
+    column_dimension_map:
+      "Lowest ten per cent":  {segment: lowest_decile}
+      "Highest ten per cent": {segment: highest_decile}
+      "All households":       {segment: all_households}
+    unit: percent
+
+  # ----- Forward / day-ahead retail price contracts -----
+  - file: Electricity_Prices_Day_Ahead_Baseload_Contracts_-_Monthly_Average_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: dayfirst
+    entity_column_index: 0
+    metric_name: power_price_day_ahead_baseload
+    dimensions: {commodity: electricity}
+    column_dimension_map:
+      "Price": {tariff_type: day_ahead_baseload}
+    unit: GBP_per_MWh
+
+  - file: Electricity_Prices_Forward_Delivery_Contracts_-_Weekly_Average_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: dayfirst
+    entity_column_index: 0
+    metric_name: power_price_forward_delivery
+    dimensions: {commodity: electricity}
+    column_dimension_map:
+      "Price": {tariff_type: forward_delivery}
+    unit: GBP_per_MWh
+
+  - file: Gas_Prices_Forward_Delivery_Contracts_-_Weekly_Average_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: dayfirst
+    entity_column_index: 0
+    metric_name: gas_price_forward_delivery
+    dimensions: {commodity: gas}
+    column_dimension_map:
+      "Price": {tariff_type: forward_delivery}
+    unit: pence_per_therm
+
+  # ----- Complaints (received & resolved) -----
+  - file: Domestic_complaints_received_by_all_suppliers_per_100000_customer_accounts_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: complaints_received_per_100k
+    column_dimension_map:
+      "Large":  {supplier_size: large}
+      "Medium": {supplier_size: medium}
+      "Small":  {supplier_size: small}
+      "All":    {supplier_size: all}
+    unit: rate_per_100k
+
+  - file: Domestic_complaints_received_by_large_suppliers_per_100000_customer_accounts.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: complaints_received_per_100k
+    unit: rate_per_100k
+
+  - file: Domestic_complaints_received_by_medium-sized_suppliers_per_100000_customer_accounts.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: complaints_received_per_100k
+    unit: rate_per_100k
+
+  - file: Domestic_complaints_received_by_a_selection_of_small-sized_suppliers_per_10000_customer_accounts.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: complaints_received_per_10k_small
+    unit: rate_per_10k
+
+  - file: Domestic_complaints_resolved_by_large_suppliers_by_end_of_next_working_day.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: complaints_resolved_next_day_pct
+    unit: percent
+
+  - file: Domestic_complaints_resolved_by_medium-sized_suppliers_by_end_of_next_working_day.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: complaints_resolved_next_day_pct
+    unit: percent
+
+  - file: Domestic_complaints_resolved_by_a_selection_of_small-sized_suppliers_by_end_of_next_working_day.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: complaints_resolved_next_day_pct
+    unit: percent
+
+  - file: Domestic_complaints_resolved_by_large_suppliers_within_eight_weeks.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: complaints_resolved_8w_pct
+    unit: percent
+
+  - file: Domestic_complaints_resolved_by_medium-sized_suppliers_within_eight_weeks.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: complaints_resolved_8w_pct
+    unit: percent
+
+  - file: Domestic_complaints_resolved_by_a_selection_of_small-sized_suppliers_within_eight_weeks.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: complaints_resolved_8w_pct
+    unit: percent
+
+  - file: Minor_incidents.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    column_dimension_map:
+      "Historical":     {metric_name: minor_incidents_historical}
+      "Current Period": {metric_name: minor_incidents_current}
+    unit: count
+
+  # ----- Customer satisfaction & NPS -----
+  - file: Customer_satisfaction_Billing_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    column_dimension_map:
+      "Ease of Understanding bill": {metric_name: satisfaction_billing_understanding_pct}
+      "Accuracy of bill":           {metric_name: satisfaction_billing_accuracy_pct}
+    unit: percent
+
+  - file: Customer_satisfaction_Ease_of_contacting_supplier_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    column_dimension_substring: true
+    column_dimension_map:
+      "very or fairly easy":           {metric_name: satisfaction_contact_easy_pct}
+      "Neutral / did not try":         {metric_name: satisfaction_contact_neutral_pct}
+      "difficult to contact":          {metric_name: satisfaction_contact_difficult_pct}
+    unit: percent
+
+  - file: Customer_satisfaction_Overall_customer_service_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: satisfaction_overall_pct
+    column_dimension_map:
+      "Large suppliers":  {supplier_size: large}
+      "Medium suppliers": {supplier_size: medium}
+      "Small suppliers":  {supplier_size: small}
+      "Overall market":   {supplier_size: all}
+    unit: percent
+
+  - file: Customer_satisfaction_Switching_process_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    column_dimension_substring: true
+    column_dimension_map:
+      "Ease of comparing suppliers": {metric_name: satisfaction_switching_ease_pct}
+      "Overall switching process":   {metric_name: satisfaction_switching_overall_pct}
+    unit: percent
+
+  - file: Customer_satisfaction_Six_large_electricity_suppliers.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2018
+    entity_role: aspect
+    column_role: supplier_name
+    entity_column_index: 0
+    metric_name: satisfaction_pct
+    dimensions: {commodity: electricity}
+    unit: percent
+
+  - file: Customer_satisfaction_Six_large_gas_suppliers.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2018
+    entity_role: aspect
+    column_role: supplier_name
+    entity_column_index: 0
+    metric_name: satisfaction_pct
+    dimensions: {commodity: gas}
+    unit: percent
+
+  - file: Likelihood_to_recommend_energy_supplier_and_net_promoter_score_-_2019.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2019
+    entity_role: supplier_size
+    entity_column_index: 0
+    column_dimension_map:
+      "% who are Detractors": {metric_name: nps_detractor_pct}
+      "% who are Passive":    {metric_name: nps_passive_pct}
+      "% who are Promoters":  {metric_name: nps_promoter_pct}
+      "Net Promoter Score":   {metric_name: nps_score}
+    unit: score
+
+  - file: Likelihood_to_recommend_energy_supplier_and_net_promoter_score_-_2020.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2020
+    entity_role: supplier_size
+    entity_column_index: 0
+    column_dimension_substring: true
+    column_dimension_map:
+      "promoters":  {metric_name: nps_promoter_pct}
+      "Passive":    {metric_name: nps_passive_pct}
+      "Detractors": {metric_name: nps_detractor_pct}
+      "Net Promoter Score": {metric_name: nps_score}
+    unit: score
+
+  - file: Percentage_of_consumers_who_are_satisfied_overall_with_their_supplier_-_2019.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2019
+    entity_role: supplier_size
+    entity_column_index: 0
+    metric_name: satisfaction_overall_pct
+    unit: percent
+
+  - file: Percentage_of_consumers_who_are_satisfied_overall_with_their_supplier_-_2020.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2020
+    entity_role: supplier_size
+    entity_column_index: 0
+    metric_name: satisfaction_overall_pct
+    unit: percent
+
+  # ----- Market structure (shares, account counts) -----
+  - file: Electricity_supply_market_shares_by_company_Domestic_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: market_share_pct
+    commodity: electricity
+    segment: domestic
+    unit: percent
+
+  - file: Gas_supply_market_shares_by_company_Domestic_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_supplier_metric
+    parser: period_supplier_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: market_share_pct
+    commodity: gas
+    segment: domestic
+    unit: percent
+
+  - file: Number_of_domestic_electricity_customer_accounts_by_supplier_excluding_pre-payment_customers_Standard_variable_fixed_and.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    dimensions: {commodity: electricity, segment: domestic_excl_prepayment}
+    column_dimension_map:
+      "Default tariffs (less than 3 years)": {tariff_type: default_lt3y, metric_name: customer_accounts}
+      "Default tariffs (3 years or more)":   {tariff_type: default_gt3y, metric_name: customer_accounts}
+      "Fixed tariff - active choice":        {tariff_type: fixed_active, metric_name: customer_accounts}
+      "Other non-standard variable tariffs": {tariff_type: other_nonsvt, metric_name: customer_accounts}
+    unit: count
+
+  - file: Number_of_domestic_gas_customer_accounts_by_supplier_excluding_pre-payment_customers_Standard_variable_fixed_and_other_t.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    dimensions: {commodity: gas, segment: domestic_excl_prepayment}
+    column_dimension_map:
+      "Default tariffs (less than 3 years)": {tariff_type: default_lt3y, metric_name: customer_accounts}
+      "Default tariffs (3 years or more)":   {tariff_type: default_gt3y, metric_name: customer_accounts}
+      "Fixed tariff - active choice":        {tariff_type: fixed_active, metric_name: customer_accounts}
+      "Other non-standard variable tariffs": {tariff_type: other_nonsvt, metric_name: customer_accounts}
+    unit: count
+
+  - file: Number_of_non-price_protected_domestic_customer_accounts_by_supplier_Standard_variable_fixed_and_other_tariffs_GB.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    dimensions: {commodity: dual_fuel, segment: non_price_protected}
+    column_dimension_map:
+      "Fixed tariff - active choice":                    {tariff_type: fixed_active, metric_name: customer_accounts}
+      "Fixed tariff - default":                          {tariff_type: fixed_default, metric_name: customer_accounts}
+      "Other non-standard variable tariffs":             {tariff_type: other_nonsvt, metric_name: customer_accounts}
+      "Standard variable tariff (less than three years)": {tariff_type: svt_lt3y, metric_name: customer_accounts}
+      "Standard variable tariff (more than three years)": {tariff_type: svt_gt3y, metric_name: customer_accounts}
+    unit: count
+
+  # ----- Heat & decarbonisation overlay -----
+  - file: The_number_of_heating_systems_approved_for_Registered_Social_Landlords.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_timeseries
+    parser: period_dimension_matrix
+    period_kind: dayfirst
+    entity_column_index: 0
+    metric_name: heating_systems_approved_count
+    column_dimension_map:
+      "Air Source Heat Pump":    {component: air_source_heat_pump}
+      "Biomass":                 {component: biomass}
+      "Ground Source Heat Pump": {component: ground_source_heat_pump}
+      "Solar Thermal":           {component: solar_thermal}
+    unit: count

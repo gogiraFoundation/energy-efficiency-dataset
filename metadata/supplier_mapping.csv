@@ -1,0 +1,40 @@
+source_supplier_name,supplier_name,supplier_group,supplier_size,ofgem_supplier_id,exited_quarter
+British Gas,British Gas,large_legacy,large,BG,
+British Gas Trading,British Gas,large_legacy,large,BG,
+E.ON,E.ON,large_legacy,large,EON,
+E.On,E.ON,large_legacy,large,EON,
+E.on,E.ON,large_legacy,large,EON,
+EON,E.ON,large_legacy,large,EON,
+E.ONnext,E.ON,large_legacy,large,EON,
+EDF,EDF,large_legacy,large,EDF,
+EDF Energy,EDF,large_legacy,large,EDF,
+npower,nPower,large_legacy,large,NPOWER,2020Q4
+nPower,nPower,large_legacy,large,NPOWER,2020Q4
+ScottishPower,ScottishPower,large_legacy,large,SP,
+Scottish Power,ScottishPower,large_legacy,large,SP,
+SSE,SSE,large_legacy,large,SSE,2019Q4
+OVO,OVO,medium,medium,OVO,
+Octopus Energy,Octopus Energy,medium,medium,OCTOPUS,
+Bulb,Bulb Energy,medium,medium,BULB,2021Q4
+Bulb Energy,Bulb Energy,medium,medium,BULB,2021Q4
+Shell Energy,Shell Energy,medium,medium,SHELL,
+Utilita,Utilita,medium,medium,UTILITA,
+Utility Warehouse,Utility Warehouse,medium,medium,UW,
+Avro Energy,Avro Energy,medium,medium,AVRO,2021Q3
+Green Network Energy,Green Network Energy,medium,medium,GNE,2020Q4
+So Energy,So Energy,medium,medium,SOENERGY,
+Ecotricity,Ecotricity,small,small,ECOTRICITY,
+Good Energy,Good Energy,small,small,GOODENERGY,
+Good Energy Ltd,Good Energy,small,small,GOODENERGY,
+E,E (Gas and Electricity),small,small,E_SUPPLIER,
+Green Energy UK,Green Energy UK,small,small,GREENUK,
+Outfox Energy,Outfox Energy,small,small,OUTFOX,
+Tru Energy,Tru Energy,small,small,TRUENERGY,
+Fuse Energy,Fuse Energy,small,small,FUSE,
+ESB,ESB,small,small,ESB,2021Q4
+Alabama Energy,Alabama Energy,small,small,ALABAMA,
+Aggregate,Aggregate (Large legacy),aggregate,aggregate,AGGR,
+Total supply,Total supply,aggregate,aggregate,SUPPLY_TOTAL,
+Domestic supply,Domestic supply,aggregate,aggregate,SUPPLY_DOM,
+Non-domestic supply,Non-domestic supply,aggregate,aggregate,SUPPLY_NONDOM,
+Generation,Generation segment,aggregate,aggregate,GEN_SEGMENT,

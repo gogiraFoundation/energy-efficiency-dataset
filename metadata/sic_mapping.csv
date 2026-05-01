@@ -1,0 +1,20 @@
+sic_code,sic_section,sic_group,industry_name,high_energy_intensity_flag
+A,A,01-03,Agriculture forestry and fishing,false
+B,B,05-09,Mining and quarrying,true
+C,C,10-33,Manufacturing,true
+D,D,35,Electricity gas steam and air conditioning,true
+E,E,36-39,Water supply sewerage waste,true
+F,F,41-43,Construction,false
+G,G,45-47,Wholesale and retail trade,false
+H,H,49-53,Transportation and storage,true
+I,I,55-56,Accommodation and food services,false
+J,J,58-63,Information and communication,false
+K,K,64-66,Financial and insurance activities,false
+L,L,68,Real estate activities,false
+M,M,69-75,Professional scientific and technical,false
+N,N,77-82,Administrative and support services,false
+O,O,84,Public administration and defence,false
+P,P,85,Education,false
+Q,Q,86-88,Human health and social work,false
+R,R,90-93,Arts entertainment and recreation,false
+S,S,94-96,Other service activities,false

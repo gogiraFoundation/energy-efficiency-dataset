@@ -1,0 +1,29 @@
+project_name: uk_energy_analytics
+environment: dev
+
+database:
+  host: localhost
+  port: 5432
+  dbname: uk_energy
+  user: uk_energy_user
+  password_env_var: UK_ENERGY_DB_PASSWORD
+  connect_timeout: 10
+
+paths:
+  raw_dir: raw
+  override_dir: raw/override
+  archive_dir: raw/archive
+  temp_dir: tmp
+  log_dir: log/pipeline
+
+pipeline:
+  start_year: 2013
+  end_year: 2026
+  default_timeout_seconds: 180
+  fail_fast: true
+
+sources:
+  registry_file: metadata/source_registry.yaml
+  company_mapping_file: metadata/company_mapping.csv
+  geography_mapping_file: metadata/geography_mapping.csv
+  sic_mapping_file: metadata/sic_mapping.csv

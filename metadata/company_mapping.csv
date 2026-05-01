@@ -1,0 +1,59 @@
+source_system,source_company_name,ofgem_company_id,company_name,network_sector_code,owner_group
+ofgem,National Grid Electricity Transmission,NGET,National Grid Electricity Transmission,ET,National Grid
+ofgem,National Grid Electricity Tran,NGET,National Grid Electricity Transmission,ET,National Grid
+ofgem,Scottish Hydro Electric Transmission,SHET,Scottish Hydro Electric Transmission,ET,SSEN
+ofgem,Scottish Hydro Electricity Transmission,SHET,Scottish Hydro Electric Transmission,ET,SSEN
+ofgem,Scottish Hydro Electricity Tra,SHET,Scottish Hydro Electric Transmission,ET,SSEN
+ofgem,SHETL,SHET,Scottish Hydro Electric Transmission,ET,SSEN
+ofgem,Scottish Power Transmission,SPT,Scottish Power Transmission,ET,SP Energy Networks
+ofgem,SPT,SPT,Scottish Power Transmission,ET,SP Energy Networks
+ofgem,National Gas Transmission,NGGT,National Gas Transmission,GT,National Gas
+ofgem,National Grid Gas Transmission,NGGT,National Gas Transmission,GT,National Gas
+ofgem,Cadent Gas,CADENT,Cadent,GD,Cadent
+ofgem,Cadent,CADENT,Cadent,GD,Cadent
+ofgem,Cadent-EoE,CADENT-EOE,Cadent (East of England),GD,Cadent
+ofgem,Cadent-Lon,CADENT-LON,Cadent (London),GD,Cadent
+ofgem,Cadent-NW,CADENT-NW,Cadent (North West),GD,Cadent
+ofgem,Cadent-WM,CADENT-WM,Cadent (West Midlands),GD,Cadent
+ofgem,EoE,CADENT-EOE,Cadent (East of England),GD,Cadent
+ofgem,Lon,CADENT-LON,Cadent (London),GD,Cadent
+ofgem,NW,CADENT-NW,Cadent (North West),GD,Cadent
+ofgem,WM,CADENT-WM,Cadent (West Midlands),GD,Cadent
+ofgem,Northern Gas Networks,NGN,Northern Gas Networks,GD,NGN
+ofgem,NGN,NGN,Northern Gas Networks,GD,NGN
+ofgem,SGN,SGN,Scotia Gas Networks,GD,SGN
+ofgem,SGN-Sc,SGN-SC,Scotia Gas Networks (Scotland),GD,SGN
+ofgem,SGN-Sn,SGN-SN,Scotia Gas Networks (Southern),GD,SGN
+ofgem,Wales & West Utilities,WWU,Wales and West Utilities,GD,WWU
+ofgem,Wales and West Utilities,WWU,Wales and West Utilities,GD,WWU
+ofgem,WWU,WWU,Wales and West Utilities,GD,WWU
+ofgem,Electricity North West,ENWL,Electricity North West,ED,Electricity North West
+ofgem,ENWL,ENWL,Electricity North West,ED,Electricity North West
+ofgem,Northern Powergrid,NPG,Northern Powergrid,ED,Northern Powergrid
+ofgem,NPg,NPG,Northern Powergrid,ED,Northern Powergrid
+ofgem,Northern Powergrid (Yorkshire),NPG-YORKS,Northern Powergrid (Yorkshire),ED,Northern Powergrid
+ofgem,Northern Powergrid (Northeast),NPG-NE,Northern Powergrid (North East),ED,Northern Powergrid
+ofgem,Western Power Distribution,WPD,Western Power Distribution,ED,National Grid
+ofgem,WPD,WPD,Western Power Distribution,ED,National Grid
+ofgem,WPD-East,WPD-EM,Western Power Distribution (East Midlands),ED,National Grid
+ofgem,WPD-West,WPD-WM,Western Power Distribution (West Midlands),ED,National Grid
+ofgem,WPD-SoWales,WPD-SW,Western Power Distribution (South Wales),ED,National Grid
+ofgem,WPD-SoWest,WPD-SWE,Western Power Distribution (South West),ED,National Grid
+ofgem,UK Power Networks,UKPN,UK Power Networks,ED,UK Power Networks
+ofgem,UKPN,UKPN,UK Power Networks,ED,UK Power Networks
+ofgem,UKPN-LPN,UKPN-LPN,UK Power Networks (London),ED,UK Power Networks
+ofgem,UKPN-EPN,UKPN-EPN,UK Power Networks (Eastern),ED,UK Power Networks
+ofgem,UKPN-SPN,UKPN-SPN,UK Power Networks (South Eastern),ED,UK Power Networks
+ofgem,SP Energy Networks,SPEN,SP Energy Networks,ED,SP Energy Networks
+ofgem,SPEN,SPEN,SP Energy Networks,ED,SP Energy Networks
+ofgem,SPEN-SPD,SPEN-SPD,SP Distribution,ED,SP Energy Networks
+ofgem,SPEN-SPM,SPEN-SPM,SP Manweb,ED,SP Energy Networks
+ofgem,Scottish and Southern Electricity Networks,SSEN-D,SSEN Distribution,ED,SSEN
+ofgem,SSEN,SSEN-D,SSEN Distribution,ED,SSEN
+ofgem,SSEN-SEPD,SSEN-SEPD,SSEN Southern Electric Power Distribution,ED,SSEN
+ofgem,SSEN-SHEPD,SSEN-SHEPD,SSEN Scottish Hydro Electric Power Distribution,ED,SSEN
+ofgem,EDF,EDF,EDF Energy,GEN,EDF
+ofgem,RWE,RWE,RWE,GEN,RWE
+ofgem,SSE,SSE,SSE plc,GEN,SSE
+ofgem,Drax,DRAX,Drax,GEN,Drax
+ofgem,Uniper,UNIPER,Uniper,GEN,Uniper

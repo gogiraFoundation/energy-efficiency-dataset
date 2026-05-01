@@ -1,0 +1,30 @@
+# Local PostgreSQL for the pipeline. Requires PostgreSQL 15+ (MERGE in SQL).
+#
+# 1. Set UK_ENERGY_DB_PASSWORD in a `.env` file in this directory (see `.env.example`).
+# 2. Optional: set UK_ENERGY_DB_PORT (default 5432 on the host). Must match
+#    `UK_ENERGY_DB_PORT` / `pipeline/config/settings.yaml` when you run the pipeline.
+#
+#    docker compose up -d
+#    export UK_ENERGY_DB_PASSWORD=…   # same value as in .env
+#    python -m pipeline.orchestrate full_refresh
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: uk_energy_postgres
+    environment:
+      POSTGRES_USER: uk_energy_user
+      POSTGRES_PASSWORD: ${UK_ENERGY_DB_PASSWORD:?Set UK_ENERGY_DB_PASSWORD in .env}
+      POSTGRES_DB: uk_energy
+    ports:
+      - "${UK_ENERGY_DB_PORT:-5432}:5432"
+    volumes:
+      - uk_energy_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uk_energy_user -d uk_energy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  uk_energy_pgdata:
