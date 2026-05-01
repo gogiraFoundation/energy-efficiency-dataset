@@ -1,0 +1,50 @@
+source_system,source_geography_code,geography_code,geography_name,geography_type,parent_geography_code
+ofgem,GB,GB,Great Britain,country,
+ons,E12000001,E12000001,North East,region,GB
+ons,E12000002,E12000002,North West,region,GB
+ons,E12000003,E12000003,Yorkshire and The Humber,region,GB
+ons,E12000004,E12000004,East Midlands,region,GB
+ons,E12000005,E12000005,West Midlands,region,GB
+ons,E12000006,E12000006,East of England,region,GB
+ons,E12000007,E12000007,London,region,GB
+ons,E12000008,E12000008,South East,region,GB
+ons,E12000009,E12000009,South West,region,GB
+ons,S92000003,S92000003,Scotland,region,GB
+ons,W92000004,W92000004,Wales,region,GB
+ofgem,T_NORTH_SCOT,S92000003,Northern Scotland Transmission Zone,transmission_zone,GB
+ofgem,T_SOUTH_SCOT,S92000003,Southern Scotland Transmission Zone,transmission_zone,GB
+ofgem,T_NORTH_E,E12000001,Northern England Transmission Zone,transmission_zone,GB
+ofgem,T_NORTH_W,E12000002,North West England Transmission Zone,transmission_zone,GB
+ofgem,T_YORKS,E12000003,Yorkshire Transmission Zone,transmission_zone,GB
+ofgem,T_E_MIDS,E12000004,East Midlands Transmission Zone,transmission_zone,GB
+ofgem,T_W_MIDS,E12000005,West Midlands Transmission Zone,transmission_zone,GB
+ofgem,T_EAST,E12000006,East of England Transmission Zone,transmission_zone,GB
+ofgem,T_LONDON,E12000007,London Transmission Zone,transmission_zone,GB
+ofgem,T_SOUTH_E,E12000008,South East Transmission Zone,transmission_zone,GB
+ofgem,T_SOUTH_W,E12000009,South West Transmission Zone,transmission_zone,GB
+ofgem,T_WALES,W92000004,Wales Transmission Zone,transmission_zone,GB
+ofgem,LICENCE_NGET,GB,National Grid ET Licence Area,licence_area,GB
+ofgem,LICENCE_SHET,S92000003,SHE Transmission Licence Area (North Scotland),licence_area,GB
+ofgem,LICENCE_SPT,S92000003,SP Transmission Licence Area (South Scotland),licence_area,GB
+ofgem,DNO_ENWL,E12000002,ENWL Distribution Licence Area,distribution_licence_area,GB
+ofgem,DNO_NPG_YORKS,E12000003,Northern Powergrid Yorkshire,distribution_licence_area,GB
+ofgem,DNO_NPG_NE,E12000001,Northern Powergrid North East,distribution_licence_area,GB
+ofgem,DNO_WPD_EM,E12000004,WPD East Midlands,distribution_licence_area,GB
+ofgem,DNO_WPD_WM,E12000005,WPD West Midlands,distribution_licence_area,GB
+ofgem,DNO_WPD_SW,W92000004,WPD South Wales,distribution_licence_area,GB
+ofgem,DNO_WPD_SWE,E12000009,WPD South West,distribution_licence_area,GB
+ofgem,DNO_UKPN_LPN,E12000007,UK Power Networks London,distribution_licence_area,GB
+ofgem,DNO_UKPN_EPN,E12000006,UK Power Networks Eastern,distribution_licence_area,GB
+ofgem,DNO_UKPN_SPN,E12000008,UK Power Networks South Eastern,distribution_licence_area,GB
+ofgem,DNO_SPEN_SPD,S92000003,SP Distribution (Central Scotland),distribution_licence_area,GB
+ofgem,DNO_SPEN_SPM,E12000002,SP Manweb (Merseyside & North Wales),distribution_licence_area,GB
+ofgem,DNO_SSEN_SEPD,E12000008,SSEN Southern,distribution_licence_area,GB
+ofgem,DNO_SSEN_SHEPD,S92000003,SSEN Scottish Hydro,distribution_licence_area,GB
+ofgem,GDN_CADENT_NW,E12000002,Cadent North West,gas_distribution_licence_area,GB
+ofgem,GDN_CADENT_WM,E12000005,Cadent West Midlands,gas_distribution_licence_area,GB
+ofgem,GDN_CADENT_EOE,E12000006,Cadent East of England,gas_distribution_licence_area,GB
+ofgem,GDN_CADENT_LON,E12000007,Cadent London,gas_distribution_licence_area,GB
+ofgem,GDN_NGN,E12000003,Northern Gas Networks (Yorkshire and North East),gas_distribution_licence_area,GB
+ofgem,GDN_SGN_SC,S92000003,SGN Scotland,gas_distribution_licence_area,GB
+ofgem,GDN_SGN_SN,E12000008,SGN Southern,gas_distribution_licence_area,GB
+ofgem,GDN_WWU,W92000004,Wales and West Utilities,gas_distribution_licence_area,GB

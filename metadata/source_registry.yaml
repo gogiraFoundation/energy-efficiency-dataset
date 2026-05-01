@@ -1,0 +1,90 @@
+sources:
+  - source_id: ofgem_ens_et
+    name: Ofgem Electricity Transmission ENS
+    domain: ofgem
+    default_format: csv
+    frequency: annual
+    fetch_mode: http
+    url: https://www.ofgem.gov.uk/news-and-insight/data/data-portal/energy-network-indicators
+    raw_table: raw_ofgem_ens
+    description: Volume of energy not supplied for electricity transmission.
+
+  - source_id: ofgem_expenditure_allowance
+    name: Ofgem Expenditure vs Allowance
+    domain: ofgem
+    default_format: csv
+    frequency: annual
+    fetch_mode: http
+    url: https://www.ofgem.gov.uk/news-and-insight/data/data-portal/energy-network-indicators
+    raw_table: raw_ofgem_expenditure
+    description: Expenditure and allowance series for RIIO entities.
+
+  - source_id: ofgem_rore
+    name: Ofgem Return on Regulatory Equity
+    domain: ofgem
+    default_format: csv
+    frequency: annual
+    fetch_mode: http
+    url: https://www.ofgem.gov.uk/news-and-insight/data/data-portal/energy-network-indicators
+    raw_table: raw_ofgem_rore
+    description: RoRE by owner and network sector.
+
+  - source_id: ofgem_customer_metrics
+    name: Ofgem customer cost and satisfaction
+    domain: ofgem
+    default_format: csv
+    frequency: annual
+    fetch_mode: http
+    url: https://www.ofgem.gov.uk/news-and-insight/data/data-portal/energy-network-indicators
+    raw_table: raw_ofgem_customer_metrics
+    description: Customer interruptions, minutes lost, satisfaction, and cost per customer.
+
+  - source_id: ofgem_emissions
+    name: Ofgem network emissions
+    domain: ofgem
+    default_format: csv
+    frequency: annual
+    fetch_mode: http
+    url: https://www.ofgem.gov.uk/news-and-insight/data/data-portal/energy-network-indicators
+    raw_table: raw_ofgem_emissions
+    description: SF6 and carbon footprint by network company.
+
+  - source_id: ons_energy_intensity
+    name: ONS Energy intensity by industry
+    domain: ons
+    default_format: csv
+    frequency: annual
+    fetch_mode: http
+    url: https://www.ons.gov.uk/
+    raw_table: raw_ons_energy_intensity
+    description: kWh per GBP GVA by SIC industry group.
+
+  - source_id: ons_sector_fuel_use
+    name: ONS energy use by industry and fuel type
+    domain: ons
+    default_format: csv
+    frequency: annual
+    fetch_mode: http
+    url: https://www.ons.gov.uk/
+    raw_table: raw_ons_sector_fuel_use
+    description: Electricity and gas split by industry.
+
+  - source_id: ons_regional_gva
+    name: ONS regional GVA by industry
+    domain: ons
+    default_format: csv
+    frequency: annual
+    fetch_mode: http
+    url: https://www.ons.gov.uk/
+    raw_table: raw_ons_regional_gva
+    description: Regional GVA used for ENS-to-output bridge.
+
+  - source_id: ons_lcree
+    name: ONS Low Carbon Renewable Energy Economy
+    domain: ons
+    default_format: csv
+    frequency: annual
+    fetch_mode: http
+    url: https://www.ons.gov.uk/
+    raw_table: raw_ons_lcree
+    description: LCREE turnover used for narrative context only.
