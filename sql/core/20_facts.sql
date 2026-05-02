@@ -71,3 +71,14 @@ CREATE TABLE IF NOT EXISTS core_fact_regional_gva (
     created_at TIMESTAMPTZ DEFAULT now(),
     UNIQUE (date_id, geography_id, industry_id)
 );
+
+CREATE TABLE IF NOT EXISTS core_fact_input_output (
+    input_output_id BIGSERIAL PRIMARY KEY,
+    date_id INTEGER NOT NULL REFERENCES core_dim_date(date_id),
+    industry_id BIGINT NOT NULL REFERENCES core_dim_industry(industry_id),
+    commodity TEXT NOT NULL,
+    intermediate_consumption_share NUMERIC,
+    intermediate_consumption_value NUMERIC,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (date_id, industry_id, commodity)
+);

@@ -270,5 +270,5 @@ CREATE INDEX IF NOT EXISTS idx_raw_xlsx_gas_supply_period        ON raw_xlsx_gas
 -- Extend etl_run_log to capture xlsx-loader error messages.
 -- -----------------------------------------------------------------------------
 
-ALTER TABLE etl_run_log
+ALTER TABLE audit.etl_run_log
     ADD COLUMN IF NOT EXISTS error_message TEXT;

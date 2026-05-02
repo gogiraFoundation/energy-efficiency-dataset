@@ -8,6 +8,10 @@
 -- canonical company_name + sector code.  Falls back to the raw text if no
 -- alias row matches (the join is LEFT, downstream will surface unmatched
 -- companies via 10_quality_checks.sql).
+--
+-- Dedup priority (xlsx before jsonb) can drop populated JSONB metrics when the
+-- xlsx row exists but leaves fields NULL. Future improvement: per-column
+-- COALESCE merge between xlsx_src and jsonb_src instead of DISTINCT ON prio.
 
 -- Defensive: if the user runs `staging` on a brand-new database without ever
 -- running the `xlsx` step, the xlsx raw tables and the mapping tables won't
@@ -56,7 +60,7 @@ WITH jsonb_src AS (
         (payload->>'minutes_lost')::numeric AS minutes_lost,
         (payload->>'gas_interruption_volume')::numeric AS gas_interruption_volume,
         (payload->>'gas_lost_volume')::numeric AS gas_lost_volume
-    FROM raw_ofgem_ens
+    FROM raw.raw_ofgem_ens
 ),
 xlsx_src AS (
     SELECT
@@ -131,10 +135,10 @@ WITH jsonb_src AS (
             (re.payload->>'rore_pct')::numeric,
             (rmatch.rr->>'rore_pct')::numeric
         ) AS rore_pct
-    FROM raw_ofgem_expenditure re
+    FROM raw.raw_ofgem_expenditure re
     LEFT JOIN LATERAL (
         SELECT ror.payload AS rr
-        FROM raw_ofgem_rore ror
+        FROM raw.raw_ofgem_rore ror
         WHERE (ror.payload->>'year')::numeric::int = (re.payload->>'year')::numeric::int
           AND ror.payload->>'company_name' = re.payload->>'company_name'
           AND ror.payload->>'network_sector' = re.payload->>'network_sector'
@@ -238,7 +242,7 @@ WITH jsonb_src AS (
         coalesce(nullif(payload->>'geography_code', ''), 'GB') AS geography_code,
         (payload->>'cost_per_customer_gbp')::numeric AS cost_per_customer_gbp,
         (payload->>'satisfaction_score')::numeric AS satisfaction_score
-    FROM raw_ofgem_customer_metrics
+    FROM raw.raw_ofgem_customer_metrics
 ),
 xlsx_src AS (
     SELECT
@@ -310,7 +314,7 @@ WITH jsonb_src AS (
         nullif(payload->>'network_sector', '') AS network_sector,
         (payload->>'sf6_kg')::numeric AS sf6_kg,
         (payload->>'carbon_footprint_tco2e')::numeric AS carbon_footprint_tco2e
-    FROM raw_ofgem_emissions
+    FROM raw.raw_ofgem_emissions
 ),
 xlsx_src AS (
     SELECT

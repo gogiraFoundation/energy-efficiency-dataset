@@ -51,11 +51,15 @@ ON CONFLICT (company_name) DO NOTHING;
 
 INSERT INTO core_dim_industry (sic_code, sic_section, sic_group, industry_name, high_energy_intensity_flag)
 SELECT DISTINCT
-    e.sic_code,
-    LEFT(e.sic_code, 1),
-    e.sic_code,
-    COALESCE(MAX(e.industry_name), e.sic_code),
-    CASE WHEN LEFT(e.sic_code, 1) IN ('B', 'C', 'D', 'E', 'H') THEN TRUE ELSE FALSE END
-FROM stg_energy_intensity e
-GROUP BY e.sic_code
+    s.sic_code,
+    LEFT(s.sic_code, 1),
+    s.sic_code,
+    COALESCE(MAX(s.industry_name), s.sic_code),
+    CASE WHEN LEFT(s.sic_code, 1) IN ('B', 'C', 'D', 'E', 'H') THEN TRUE ELSE FALSE END
+FROM (
+    SELECT sic_code, industry_name FROM stg_energy_intensity
+    UNION ALL
+    SELECT sic_code, industry_name FROM stg_intermediate_consumption
+) s
+GROUP BY s.sic_code
 ON CONFLICT (sic_code) DO NOTHING;

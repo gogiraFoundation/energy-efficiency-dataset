@@ -20,7 +20,7 @@ USING (
              THEN supply_g.total_value
         END AS total_gas_supply
     FROM stg_network_reliability s
-    JOIN core_dim_date d ON d.year = s.year
+    JOIN core_dim_date d ON d.year = s.year AND d.quarter IS NULL
     JOIN core_dim_geography g ON g.geography_code = 'GB'
     JOIN core_dim_company c ON c.company_name = s.company_name
     JOIN core_dim_network_sector ns ON ns.sector_code = s.network_sector
@@ -58,7 +58,7 @@ MERGE INTO core_fact_financial_performance AS tgt
 USING (
     SELECT d.date_id, c.company_id, ns.network_sector_id, s.totex_allowance_million_gbp, s.actual_totex_million_gbp, s.rore_pct
     FROM stg_financial_performance s
-    JOIN core_dim_date d ON d.year = s.year
+    JOIN core_dim_date d ON d.year = s.year AND d.quarter IS NULL
     JOIN core_dim_company c ON c.company_name = s.company_name
     JOIN core_dim_network_sector ns ON ns.sector_code = s.network_sector
 ) src
@@ -74,7 +74,7 @@ MERGE INTO core_fact_customer_metrics AS tgt
 USING (
     SELECT d.date_id, g.geography_id, c.company_id, ns.network_sector_id, s.cost_per_customer_gbp, s.satisfaction_score
     FROM stg_customer_metrics s
-    JOIN core_dim_date d ON d.year = s.year
+    JOIN core_dim_date d ON d.year = s.year AND d.quarter IS NULL
     JOIN core_dim_geography g ON g.geography_code = s.geography_code
     LEFT JOIN core_dim_company c ON c.company_name = s.company_name
     LEFT JOIN core_dim_network_sector ns ON ns.sector_code = s.network_sector
@@ -90,7 +90,7 @@ MERGE INTO core_fact_emissions AS tgt
 USING (
     SELECT d.date_id, c.company_id, ns.network_sector_id, s.sf6_kg, s.carbon_footprint_tco2e
     FROM stg_emissions s
-    JOIN core_dim_date d ON d.year = s.year
+    JOIN core_dim_date d ON d.year = s.year AND d.quarter IS NULL
     JOIN core_dim_company c ON c.company_name = s.company_name
     JOIN core_dim_network_sector ns ON ns.sector_code = s.network_sector
 ) src
@@ -103,7 +103,7 @@ MERGE INTO core_fact_energy_intensity AS tgt
 USING (
     SELECT d.date_id, i.industry_id, ei.kwh_per_gva, fu.electricity_pct AS electricity_pct_of_total_energy, fu.gas_pct AS gas_pct_of_total_energy, ei.energy_intensity_index
     FROM stg_energy_intensity ei
-    JOIN core_dim_date d ON d.year = ei.year
+    JOIN core_dim_date d ON d.year = ei.year AND d.quarter IS NULL
     JOIN core_dim_industry i ON i.sic_code = ei.sic_code
     LEFT JOIN stg_sector_fuel_use fu ON fu.year = ei.year AND fu.sic_code = ei.sic_code
 ) src
@@ -120,7 +120,7 @@ MERGE INTO core_fact_regional_gva AS tgt
 USING (
     SELECT d.date_id, g.geography_id, i.industry_id, rg.gva_million_gbp
     FROM stg_regional_gva rg
-    JOIN core_dim_date d ON d.year = rg.year
+    JOIN core_dim_date d ON d.year = rg.year AND d.quarter IS NULL
     JOIN core_dim_geography g ON g.geography_code = rg.region_code
     JOIN core_dim_industry i ON i.sic_code = rg.sic_code
 ) src
@@ -128,6 +128,29 @@ ON (tgt.date_id = src.date_id AND tgt.geography_id = src.geography_id AND tgt.in
 WHEN MATCHED THEN UPDATE SET gva_million_gbp = src.gva_million_gbp
 WHEN NOT MATCHED THEN INSERT (date_id, geography_id, industry_id, gva_million_gbp)
 VALUES (src.date_id, src.geography_id, src.industry_id, src.gva_million_gbp);
+
+MERGE INTO core_fact_input_output AS tgt
+USING (
+    SELECT
+        d.date_id,
+        i.industry_id,
+        io.commodity,
+        io.intermediate_consumption_share,
+        io.intermediate_consumption_value
+    FROM stg_intermediate_consumption io
+    JOIN core_dim_date d ON d.year = io.year AND d.quarter IS NULL
+    JOIN core_dim_industry i ON i.sic_code = io.sic_code
+) src
+ON (tgt.date_id = src.date_id AND tgt.industry_id = src.industry_id AND tgt.commodity = src.commodity)
+WHEN MATCHED THEN UPDATE SET
+    intermediate_consumption_share = src.intermediate_consumption_share,
+    intermediate_consumption_value = src.intermediate_consumption_value
+WHEN NOT MATCHED THEN INSERT (
+    date_id, industry_id, commodity, intermediate_consumption_share, intermediate_consumption_value
+)
+VALUES (
+    src.date_id, src.industry_id, src.commodity, src.intermediate_consumption_share, src.intermediate_consumption_value
+);
 
 -- =============================================================================
 -- Market facts: prices, context fuel-mix, 2024 market shares
@@ -145,7 +168,7 @@ USING (
         s.avg_value AS value,
         s.unit
     FROM stg_market_prices s
-    JOIN core_dim_date d ON d.year = s.year
+    JOIN core_dim_date d ON d.year = s.year AND d.quarter IS NULL
     JOIN core_dim_geography g ON g.geography_code = 'GB'
 ) src
 ON (tgt.year = src.year AND tgt.commodity = src.commodity
@@ -172,7 +195,7 @@ USING (
         s.value,
         s.unit
     FROM stg_market_context s
-    JOIN core_dim_date d ON d.year = s.year
+    JOIN core_dim_date d ON d.year = s.year AND d.quarter IS NULL
     JOIN core_dim_geography g ON g.geography_code = 'GB'
 ) src
 ON (tgt.year = src.year AND tgt.commodity = src.commodity
@@ -195,3 +218,36 @@ ON (tgt.year = src.year AND tgt.commodity = src.commodity AND tgt.company_name =
 WHEN MATCHED THEN UPDATE SET share_pct = src.share_pct, source_file = src.source_file
 WHEN NOT MATCHED THEN INSERT (year, commodity, company_name, share_pct, source_file)
 VALUES (src.year, src.commodity, src.company_name, src.share_pct, src.source_file);
+
+MERGE INTO core_fact_daily_prices AS tgt
+USING (
+    SELECT
+        d.date_id,
+        g.geography_id,
+        s.period_date,
+        s.commodity,
+        s.source_name,
+        s.metric_name,
+        s.value,
+        s.unit
+    FROM stg_daily_market_prices s
+    JOIN core_dim_date d ON d.year = s.year AND d.period_kind = 'annual'
+    JOIN core_dim_geography g ON g.geography_code = 'GB'
+) src
+ON (
+    tgt.period_date = src.period_date
+    AND tgt.commodity = src.commodity
+    AND tgt.source_name = src.source_name
+    AND tgt.metric_name = src.metric_name
+)
+WHEN MATCHED THEN UPDATE SET
+    date_id = src.date_id,
+    geography_id = src.geography_id,
+    value = src.value,
+    unit = src.unit
+WHEN NOT MATCHED THEN INSERT (
+    date_id, geography_id, period_date, commodity, source_name, metric_name, value, unit
+)
+VALUES (
+    src.date_id, src.geography_id, src.period_date, src.commodity, src.source_name, src.metric_name, src.value, src.unit
+);

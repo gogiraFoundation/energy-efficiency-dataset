@@ -21,9 +21,9 @@ BEGIN
 
     SELECT COUNT(*) INTO v_count
     FROM (
-        SELECT date_id, company_id, network_sector_id, COUNT(*)
+        SELECT date_id, geography_id, company_id, network_sector_id, COUNT(*)
         FROM core_fact_network_reliability
-        GROUP BY 1,2,3
+        GROUP BY 1, 2, 3, 4
         HAVING COUNT(*) > 1
     ) d;
     IF v_count > 0 THEN

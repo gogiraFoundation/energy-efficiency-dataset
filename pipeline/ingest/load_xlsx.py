@@ -4,7 +4,7 @@ Reads ``metadata/xlsx_registry.yaml`` and ``metadata/riio_periods.yaml``, then
 for every entry:
 
 1. Opens the source xlsx with openpyxl/pandas.
-2. Dispatches to one of five parser strategies (see registry comments).
+2. Dispatches to a parser strategy from the registry (see xlsx_registry comments).
 3. Normalises rows to the appropriate ``raw_xlsx_*`` schema (network, share,
    or market shape).
 4. Idempotently upserts rows via ``INSERT ... ON CONFLICT ... DO UPDATE`` keyed
@@ -57,6 +57,9 @@ MARKET_TABLES = {
 RETAIL_SUPPLIER_TABLES = {"raw_xlsx_supplier_metric"}
 RETAIL_TIMESERIES_TABLES = {"raw_xlsx_retail_timeseries"}
 RETAIL_SNAPSHOT_TABLES = {"raw_xlsx_retail_snapshot"}
+RENEWABLES_TABLES = {"raw_xlsx_renewables"}
+WHD_TABLES = {"raw_xlsx_whd"}
+SCHEME_METRIC_TABLES = {"raw_xlsx_scheme_metric"}
 
 NETWORK_COLUMNS = (
     "year",
@@ -125,6 +128,43 @@ RETAIL_SNAPSHOT_COLUMNS = (
     "unit",
     "source_file",
 )
+RENEWABLES_COLUMNS = (
+    "period_date",
+    "period_label",
+    "year",
+    "quarter",
+    "technology",
+    "region",
+    "installation_type",
+    "metric_name",
+    "value",
+    "unit",
+    "source_file",
+)
+WHD_COLUMNS = (
+    "scheme_year",
+    "calendar_year",
+    "nation",
+    "supplier_name",
+    "obligation_method",
+    "metric_name",
+    "value",
+    "unit",
+    "source_file",
+)
+SCHEME_METRIC_COLUMNS = (
+    "period_date",
+    "period_label",
+    "year",
+    "quarter",
+    "month",
+    "scheme_key",
+    "entity",
+    "metric_name",
+    "value",
+    "unit",
+    "source_file",
+)
 
 # Constraint names defined in sql/raw/05_create_raw_xlsx_tables.sql and 06_create_raw_xlsx_retail_tables.sql
 TABLE_CONSTRAINT = {
@@ -147,6 +187,9 @@ TABLE_CONSTRAINT = {
     "raw_xlsx_supplier_metric": "raw_xlsx_supplier_metric_natural_uniq",
     "raw_xlsx_retail_timeseries": "raw_xlsx_retail_timeseries_natural_uniq",
     "raw_xlsx_retail_snapshot": "raw_xlsx_retail_snapshot_natural_uniq",
+    "raw_xlsx_renewables": "raw_xlsx_renewables_natural_uniq",
+    "raw_xlsx_whd": "raw_xlsx_whd_natural_uniq",
+    "raw_xlsx_scheme_metric": "raw_xlsx_scheme_metric_natural_uniq",
 }
 
 
@@ -215,6 +258,7 @@ def _parse_year_from_label(label: Any) -> int | None:
 
 _QUARTER_LEAD = re.compile(r"^\s*Q(\d)\s+(\d{4})\s*$", re.IGNORECASE)
 _QUARTER_TRAIL = re.compile(r"^\s*(\d{4})\s+Q(\d)\s*$", re.IGNORECASE)
+_QUARTER_WORD = re.compile(r"^\s*Quarter\s+(\d)\s+(\d{4})\s*$", re.IGNORECASE)
 _HALF_YEAR_WINTER = re.compile(r"^\s*(\d{4})\s*[/]\s*(\d{2,4})\s+winter\s*\*?\s*$", re.IGNORECASE)
 _HALF_YEAR_SUMMER = re.compile(r"^\s*(\d{4})\s+summer\s*\*?\s*$", re.IGNORECASE)
 
@@ -237,6 +281,11 @@ def _parse_quarter(value: Any) -> tuple[int, int] | None:
             q, y = int(groups[0]), int(groups[1])
         else:
             y, q = int(groups[0]), int(groups[1])
+        if 1 <= q <= 4 and 1900 <= y <= 2100:
+            return y, q
+    m = _QUARTER_WORD.match(s)
+    if m:
+        q, y = int(m.group(1)), int(m.group(2))
         if 1 <= q <= 4 and 1900 <= y <= 2100:
             return y, q
     return None
@@ -317,8 +366,32 @@ def _year_from_date(d: date | None, label: Any | None = None) -> int | None:
     return _parse_year_from_label(label)
 
 
-def _read_xlsx(path: Path, sheet: str = "Sheet1", header_row: int = 0) -> pd.DataFrame:
+def _read_xlsx(path: Path, sheet: str | int = "Sheet1", header_row: int = 0) -> pd.DataFrame:
     return pd.read_excel(path, sheet_name=sheet, header=header_row, engine="openpyxl")
+
+
+def _resolve_xlsx_path(data_dir: Path, entry: Mapping) -> Path | None:
+    """Pick an on-disk workbook for a registry entry.
+
+    Tries the canonical ``file`` name, optional ``alternate_files``, then a
+    case-insensitive match against filenames in ``data_dir`` (helps macOS/Linux
+    mismatches and minor download renames).
+    """
+    primary = entry["file"]
+    tried: list[Path] = [data_dir / primary]
+    for alt in entry.get("alternate_files", []) or []:
+        tried.append(data_dir / alt)
+    for p in tried:
+        if p.exists():
+            return p
+    want = primary.lower()
+    try:
+        for candidate in sorted(data_dir.iterdir()):
+            if candidate.is_file() and candidate.name.lower() == want:
+                return candidate
+    except OSError:
+        pass
+    return None
 
 
 def _replace_null_strings(df: pd.DataFrame) -> pd.DataFrame:
@@ -865,6 +938,266 @@ def parse_category_aspect_snapshot(
     return rows
 
 
+def parse_tech_period_matrix(
+    entry: Mapping,
+    df: pd.DataFrame,
+    riio_periods: Mapping,
+    source_file: str,
+) -> list[dict]:
+    """Renewables shape: technology in col 0, remaining columns are period labels.
+
+    Optional registry knobs:
+      - period_kind: 'year' | 'quarterly' (default: 'year')
+      - metric_name: canonical metric for cell values (default: 'capacity_kw')
+      - region: fixed region label for the whole sheet (e.g. 'England')
+      - installation_type: fixed installation_type for the whole sheet (e.g. 'domestic')
+      - column_dimension_map: optional mapping from column label to dimension dict
+        (lets a single sheet carry e.g. region columns instead of period columns).
+      - skip_columns: list of column labels to ignore (e.g. 'Total').
+    """
+    entity_col = df.columns[entry.get("entity_column_index", 0)]
+    period_kind = entry.get("period_kind", "year")
+    metric_name = entry.get("metric_name", "capacity_kw")
+    fixed_region = entry.get("region")
+    fixed_install_type = entry.get("installation_type")
+    column_dim_map: Mapping[str, Mapping] = entry.get("column_dimension_map", {}) or {}
+    column_dim_substring = bool(entry.get("column_dimension_substring", False))
+    skip_cols = set(entry.get("skip_columns", []) or [])
+    unit = entry.get("unit")
+
+    def resolve_column(col_label: Any) -> dict:
+        col_s = str(col_label).strip()
+        if column_dim_map:
+            if column_dim_substring:
+                cl = col_s.lower()
+                for key, dims in column_dim_map.items():
+                    if key.lower() in cl:
+                        return dict(dims)
+                return {}
+            return dict(column_dim_map.get(col_s, {}))
+        return {}
+
+    rows: list[dict] = []
+    for _, srcrow in df.iterrows():
+        tech_val = srcrow[entity_col]
+        if pd.isna(tech_val):
+            continue
+        technology = str(tech_val).strip()
+        if technology.lower() in {"null", "none", "total"}:
+            continue
+        for col in df.columns:
+            if col == entity_col or col in skip_cols:
+                continue
+            value = _to_float(srcrow[col])
+            if value is None:
+                continue
+            dims = resolve_column(col)
+            # If dims supply a region/installation_type but no period, treat the column
+            # as a dimension column and let snapshot_year (if any) drive the period.
+            if {"region", "installation_type"} & dims.keys() and not dims.get("period_label"):
+                ptoken = {
+                    "period_date": None,
+                    "period_label": str(entry.get("snapshot_year") or ""),
+                    "year": entry.get("snapshot_year"),
+                    "quarter": None,
+                }
+            else:
+                period_token = dims.get("period_label") or col
+                ptoken = _resolve_period_token(period_token, period_kind)
+            rows.append({
+                "period_date": ptoken.get("period_date"),
+                "period_label": ptoken.get("period_label") or str(col).strip(),
+                "year": ptoken.get("year"),
+                "quarter": ptoken.get("quarter"),
+                "technology": technology,
+                "region": dims.get("region") or fixed_region,
+                "installation_type": dims.get("installation_type") or fixed_install_type,
+                "metric_name": dims.get("metric_name") or metric_name,
+                "value": value,
+                "unit": unit,
+                "source_file": source_file,
+            })
+    return rows
+
+
+def parse_whd_scheme_year_matrix(
+    entry: Mapping,
+    df: pd.DataFrame,
+    riio_periods: Mapping,
+    source_file: str,
+) -> list[dict]:
+    """Warm Home Discount shape: scheme-year column on the left, dimension columns elsewhere.
+
+    Registry knobs:
+      - entity_column_index: 0 (default) - column holding the scheme-year token
+      - column_dimension_map: maps column label -> dict of (nation | supplier_name |
+        obligation_method | metric_name).
+      - column_dimension_substring: bool, substring match.
+      - metric_name: default metric for un-mapped columns.
+      - nation: optional fixed nation tag.
+      - obligation_method: optional fixed obligation_method tag.
+    """
+    entity_col = df.columns[entry.get("entity_column_index", 0)]
+    column_dim_map: Mapping[str, Mapping] = entry.get("column_dimension_map", {}) or {}
+    column_dim_substring = bool(entry.get("column_dimension_substring", False))
+    default_metric = entry.get("metric_name", "value")
+    fixed_nation = entry.get("nation")
+    fixed_obligation = entry.get("obligation_method")
+    skip_cols = set(entry.get("skip_columns", []) or [])
+    unit = entry.get("unit")
+
+    def resolve_column(col_label: Any) -> dict | None:
+        col_s = str(col_label).strip()
+        if not column_dim_map:
+            # Treat each non-key column as a supplier-grain column with default metric.
+            return {"supplier_name": col_s, "metric_name": default_metric}
+        if column_dim_substring:
+            cl = col_s.lower()
+            for key, dims in column_dim_map.items():
+                if key.lower() in cl:
+                    return dict(dims)
+            return None
+        return dict(column_dim_map[col_s]) if col_s in column_dim_map else None
+
+    rows: list[dict] = []
+    for _, srcrow in df.iterrows():
+        sy_token = srcrow[entity_col]
+        if pd.isna(sy_token):
+            continue
+        sy_str = str(sy_token).strip()
+        scheme_year: int | None = None
+        calendar_year: int | None = None
+        # "Scheme year 12" / "SY12" / "12"
+        m = re.search(r"(\d{1,2})", sy_str)
+        if m:
+            scheme_year = int(m.group(1))
+        # WHD scheme-year 1 = 2011/12 -> calendar_year = 2011 + sy
+        if scheme_year is not None and 1 <= scheme_year <= 30:
+            calendar_year = 2010 + scheme_year
+        else:
+            calendar_year = _parse_year_from_label(sy_token)
+        for col in df.columns:
+            if col == entity_col or col in skip_cols:
+                continue
+            dims = resolve_column(col)
+            if dims is None:
+                continue
+            value = _to_float(srcrow[col])
+            if value is None:
+                continue
+            rows.append({
+                "scheme_year": scheme_year,
+                "calendar_year": calendar_year,
+                "nation": dims.get("nation") or fixed_nation,
+                "supplier_name": dims.get("supplier_name"),
+                "obligation_method": dims.get("obligation_method") or fixed_obligation,
+                "metric_name": dims.get("metric_name") or default_metric,
+                "value": value,
+                "unit": unit,
+                "source_file": source_file,
+            })
+    return rows
+
+
+
+def parse_scheme_metric_long(
+    entry: Mapping,
+    df: pd.DataFrame,
+    riio_periods: Mapping,
+    source_file: str,
+) -> list[dict]:
+    """First column is time (date or year); other columns map to metrics via metric_map."""
+    entity_col = df.columns[entry.get("entity_column_index", 0)]
+    date_format = entry.get("date_format")
+    metric_map = entry.get("metric_map", {})
+    substring = bool(entry.get("metric_map_substring", False))
+    scheme_key = entry["scheme_key"]
+    unit = entry.get("unit")
+
+    rows: list[dict] = []
+    for _, srcrow in df.iterrows():
+        period_label_raw = srcrow[entity_col]
+        if pd.isna(period_label_raw):
+            continue
+        period_label_s = str(period_label_raw).strip()
+        period_date = _parse_date(period_label_raw, date_format)
+        year = _year_from_date(period_date, period_label_raw)
+        if year is None:
+            year = _parse_year_from_label(period_label_raw)
+        month = period_date.month if period_date else None
+        quarter = ((month - 1) // 3) + 1 if month else None
+
+        for col in df.columns:
+            if col == entity_col:
+                continue
+            value = _to_float(srcrow[col])
+            if value is None:
+                continue
+            metric = _resolve_metric_via_map(col, metric_map, substring)
+            if metric is None:
+                continue
+            rows.append({
+                "period_date": period_date,
+                "period_label": period_label_s,
+                "year": year,
+                "quarter": quarter,
+                "month": month,
+                "scheme_key": scheme_key,
+                "entity": None,
+                "metric_name": metric,
+                "value": value,
+                "unit": unit,
+                "source_file": source_file,
+            })
+    return rows
+
+
+def parse_scheme_period_supplier_matrix(
+    entry: Mapping,
+    df: pd.DataFrame,
+    riio_periods: Mapping,
+    source_file: str,
+) -> list[dict]:
+    """Period in col 0; remaining columns are entities (e.g. suppliers under ECO obligations)."""
+    entity_col = df.columns[entry.get("entity_column_index", 0)]
+    period_kind = entry.get("period_kind", "auto")
+    scheme_key = entry["scheme_key"]
+    metric_name = entry.get("metric_name", "value")
+    unit = entry.get("unit")
+    skip_cols = set(entry.get("skip_columns", []) or [])
+
+    rows: list[dict] = []
+    for _, srcrow in df.iterrows():
+        period_token = srcrow[entity_col]
+        if pd.isna(period_token):
+            continue
+        ptoken = _resolve_period_token(period_token, period_kind)
+        pd_d = ptoken.get("period_date")
+        month = pd_d.month if pd_d else None
+        for col in df.columns:
+            if col == entity_col or col in skip_cols:
+                continue
+            value = _to_float(srcrow[col])
+            if value is None:
+                continue
+            ent = str(col).strip()
+            ent = re.sub(r"\s*-\s*(Start|End)\s+Q\d+\s+\d{4}\s*$", "", ent).strip()
+            rows.append({
+                "period_date": ptoken.get("period_date"),
+                "period_label": ptoken.get("period_label") or str(period_token).strip(),
+                "year": ptoken.get("year"),
+                "quarter": ptoken.get("quarter"),
+                "month": month,
+                "scheme_key": scheme_key,
+                "entity": ent,
+                "metric_name": metric_name,
+                "value": value,
+                "unit": unit,
+                "source_file": source_file,
+            })
+    return rows
+
+
 PARSERS = {
     "wide_period_metric": parse_wide_period_metric,
     "year_label_long": parse_year_label_long,
@@ -874,6 +1207,10 @@ PARSERS = {
     "period_supplier_matrix": parse_period_supplier_matrix,
     "period_dimension_matrix": parse_period_dimension_matrix,
     "category_aspect_snapshot": parse_category_aspect_snapshot,
+    "tech_period_matrix": parse_tech_period_matrix,
+    "whd_scheme_year_matrix": parse_whd_scheme_year_matrix,
+    "scheme_metric_long": parse_scheme_metric_long,
+    "scheme_period_supplier_matrix": parse_scheme_period_supplier_matrix,
 }
 
 
@@ -898,6 +1235,12 @@ def _upsert_rows(client, table: str, rows: list[dict], logger: logging.Logger) -
         cols = RETAIL_TIMESERIES_COLUMNS
     elif table in RETAIL_SNAPSHOT_TABLES:
         cols = RETAIL_SNAPSHOT_COLUMNS
+    elif table in RENEWABLES_TABLES:
+        cols = RENEWABLES_COLUMNS
+    elif table in WHD_TABLES:
+        cols = WHD_COLUMNS
+    elif table in SCHEME_METRIC_TABLES:
+        cols = SCHEME_METRIC_COLUMNS
     else:
         raise ValueError(f"Unknown raw_xlsx table: {table}")
 
@@ -926,7 +1269,7 @@ def _upsert_rows(client, table: str, rows: list[dict], logger: logging.Logger) -
 def _log_run(client, source_id: str, table: str, count: int, status: str, error: str | None = None) -> None:
     client.execute(
         """
-        INSERT INTO etl_run_log (run_ts, source_id, target_table, row_count, null_rate_json, status, error_message)
+        INSERT INTO audit.etl_run_log (run_ts, source_id, target_table, row_count, null_rate_json, status, error_message)
         VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s)
         """,
         (
@@ -979,14 +1322,16 @@ def load_all_xlsx(settings: dict, client, logger: logging.Logger) -> None:
     client.execute_file("sql/raw/00_create_raw_tables.sql")
     client.execute_file("sql/raw/05_create_raw_xlsx_tables.sql")
     client.execute_file("sql/raw/06_create_raw_xlsx_retail_tables.sql")
+    client.execute_file("sql/raw/07_create_raw_xlsx_renewables_whd.sql")
+    client.execute_file("sql/raw/08_create_raw_xlsx_scheme_metric.sql")
     load_metadata_tables(settings, client, logger)
 
     registry = _load_yaml(Path("metadata/xlsx_registry.yaml"))
     riio_periods = _load_yaml(Path("metadata/riio_periods.yaml"))
     defaults = registry.get("defaults", {})
     default_data_dir = Path(defaults.get("data_dir", "data/ofgem_data_portal_xlsx"))
-    sheet = defaults.get("sheet_name", "Sheet1")
-    header_row = int(defaults.get("header_row", 0))
+    default_sheet = defaults.get("sheet_name", "Sheet1")
+    default_header_row = int(defaults.get("header_row", 0))
     fail_fast = bool(settings.get("pipeline", {}).get("fail_fast", False))
 
     files = registry.get("files", []) or []
@@ -999,13 +1344,21 @@ def load_all_xlsx(settings: dict, client, logger: logging.Logger) -> None:
         raw_table = entry["raw_table"]
         parser_name = entry["parser"]
         data_dir = Path(entry["data_dir"]) if entry.get("data_dir") else default_data_dir
-        full_path = data_dir / source_file
-        if not full_path.exists():
-            msg = f"file not found: {full_path}"
+        use_sheet = entry["sheet_name"] if "sheet_name" in entry else default_sheet
+        use_header = int(entry["header_row"]) if "header_row" in entry else default_header_row
+        full_path = _resolve_xlsx_path(data_dir, entry)
+        if full_path is None:
+            msg = f"file not found under {data_dir} (expected {source_file!r}"
+            alts = entry.get("alternate_files")
+            if alts:
+                msg += f" or alternates {alts!r}"
+            msg += ")"
             logger.warning("%s -> %s", source_file, msg)
             _log_run(client, source_file, raw_table, 0, "skipped", msg)
             failures.append(source_file)
             continue
+        if full_path.name != source_file:
+            logger.info("%s -> using on-disk file %s", source_file, full_path.name)
         parser = PARSERS.get(parser_name)
         if parser is None:
             msg = f"unknown parser '{parser_name}' for {source_file}"
@@ -1016,7 +1369,7 @@ def load_all_xlsx(settings: dict, client, logger: logging.Logger) -> None:
                 raise ValueError(msg)
             continue
         try:
-            df = _read_xlsx(full_path, sheet=sheet, header_row=header_row)
+            df = _read_xlsx(full_path, sheet=use_sheet, header_row=use_header)
             df = _replace_null_strings(df)
             rows = parser(entry, df, riio_periods, source_file)
             count = _upsert_rows(client, raw_table, rows, logger)

@@ -2,16 +2,26 @@
 
 Use this checklist before placing files into `raw/override/` (or before running `python -m pipeline.dry_run_execution --execute`).
 
+> **Scope note.** This checklist covers the **CSV/JSONB ingest path** (`pipeline/ingest/load_raw.py`), which writes into the `raw.raw_ofgem_*` and `raw.raw_ons_*` tables defined in `sql/raw/00_create_raw_tables.sql`. The **38-file Ofgem Data Portal XLSX path** (`pipeline/ingest/load_xlsx.py`) and the **retail facet XLSX path** instead write into typed `raw_xlsx_*` tables in the `public` schema (e.g. `raw_xlsx_generation_mix`, `raw_xlsx_market_prices`, `raw_xlsx_reliability`, `raw_xlsx_retail_snapshot`). Those flows are registry-driven via `metadata/xlsx_registry.yaml` and are not subject to the column contracts below. See `docs/data_sources_audit.md` for the dataset-by-dataset map.
+
+## Analytics conventions (marts / dashboard)
+
+- **HHI (Herfindahl–Hirschman Index):** classic **0–10,000** scale, \( \sum s_i^2 \) where \( s_i \) are percentage shares (0–100). Do not mix with normalized 0–1 HHI in charts.
+- **`mart_economic_impact`:** ENS is **allocated** from a single national yearly total; summed `ens_mwh_in_region_industry` reconciles to core reliability ENS by year.
+- **Cross-layer marts:** interpret as correlation / narrative support unless lagged columns are explicitly used in analysis.
+
 ## Global contract rules
 
 - File format: `.csv` (for dry-run path)
 - Header convention: `snake_case`
-- Grain: annual records (`year`)
+- Grain: mixed (annual ONS/Ofgem + daily market monitoring)
 - Numeric domains: non-negative for ENS, spend, emissions, intensity, GVA, LCREE turnover
 - Primary uniqueness expectations:
   - Network series: `(year, company_name, network_sector)`
   - Industry series: `(year, sic_code)`
   - Regional GVA: `(year, region_code, sic_code)`
+  - Input-output shares: `(year, sic_code, commodity)`
+  - Daily prices: `(date, commodity, source_name, metric_name)`
 
 ## Source-by-source contracts
 
@@ -79,6 +89,8 @@ Use this checklist before placing files into `raw/override/` (or before running 
   - `gas_pct`
 - Validation note:
   - Recommended `electricity_pct + gas_pct <= 1.0` (if these represent total shares)
+- Source note:
+  - Derived from ONS **Energy use: total** workbook (direct/reallocated energy use by SIC). Pre-transform the workbook into the contract above before placing it in `raw/override/ons_sector_fuel_use.csv`.
 
 ### `ons_regional_gva.csv` -> `raw_ons_regional_gva`
 - Required columns:
@@ -91,6 +103,26 @@ Use this checklist before placing files into `raw/override/` (or before running 
 - Required columns:
   - `year`
   - `lcree_turnover_million_gbp`
+
+### `ons_intermediate_consumption.csv` -> `raw_ons_intermediate_consumption`
+- Required columns:
+  - `year`
+  - `sic_code`
+  - `commodity`
+  - `intermediate_consumption_share`
+- Optional:
+  - `industry_name`
+  - `intermediate_consumption_value`
+
+### `ons_gas_sap_daily.csv` / `elexon_system_price_daily.csv` -> `raw_daily_market_prices`
+- Required columns:
+  - `date` (ISO `YYYY-MM-DD`)
+  - `commodity` (`gas` or `electricity`)
+  - `metric_name`
+  - `value`
+- Optional:
+  - `source_name`
+  - `unit`
 
 ## Quick dry-run commands
 

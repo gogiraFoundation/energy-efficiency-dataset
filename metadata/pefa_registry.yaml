@@ -1,0 +1,70 @@
+# ONS Physical energy flow accounts (PEFA), Excel editions.
+# https://www.ons.gov.uk/economy/environmentalaccounts/datasets/physicalenergyflowaccountspefa
+
+dataset_page: https://www.ons.gov.uk/economy/environmentalaccounts/datasets/physicalenergyflowaccountspefa
+
+# Default edition loaded by the pipeline (revised 2023 workbook).
+default_edition: "2023revised"
+
+editions:
+  2023revised:
+    filename: pefa2023final2.xlsx
+    url: https://www.ons.gov.uk/file?uri=/economy/environmentalaccounts/datasets/physicalenergyflowaccountspefa/2023revised/pefa2023final2.xlsx
+  2023current:
+    filename: pefa2023final2.xlsx
+    url: https://www.ons.gov.uk/file?uri=/economy/environmentalaccounts/datasets/physicalenergyflowaccountspefa/current/pefa2023final2.xlsx
+  2022revised:
+    filename: pefa2022final1.xlsx
+    url: https://www.ons.gov.uk/file?uri=/economy/environmentalaccounts/datasets/physicalenergyflowaccountspefa/2022revised/pefa2022final1.xlsx
+  2021revised:
+    filename: pefa2021final1.xlsx
+    url: https://www.ons.gov.uk/file?uri=/economy/environmentalaccounts/datasets/physicalenergyflowaccountspefa/2021revised/pefa2021final1.xlsx
+  2020revised:
+    filename: pefa2020final1.xlsx
+    url: https://www.ons.gov.uk/file?uri=/economy/environmentalaccounts/datasets/physicalenergyflowaccountspefa/2020revised/pefa2020final1.xlsx
+  2019revised:
+    filename: pefa2019final1.xlsx
+    url: https://www.ons.gov.uk/file?uri=/economy/environmentalaccounts/datasets/physicalenergyflowaccountspefa/2019revised/pefa2019final1.xlsx
+  2018revised:
+    filename: pefa2018final1.xlsx
+    url: https://www.ons.gov.uk/file?uri=/economy/environmentalaccounts/datasets/physicalenergyflowaccountspefa/2018revised/pefa2018final1.xlsx
+
+# Sheet layout (consistent across 2021–2023): matrix tables A–C row 8 = industry headers;
+# Table D uses row 5 for headers and row 7+ for data; Table E is a narrow bridge table.
+matrix_tables:
+  - sheet: "Table A"
+    table_id: A
+    header_row_0indexed: 8
+    data_start_row_0indexed: 9
+    first_industry_col_0indexed: 6
+    industry_col_step: 2
+  - sheet: "Table B"
+    table_id: B
+    header_row_0indexed: 8
+    data_start_row_0indexed: 9
+    first_industry_col_0indexed: 6
+    industry_col_step: 2
+  - sheet: "Table C"
+    table_id: C
+    header_row_0indexed: 8
+    data_start_row_0indexed: 9
+    first_industry_col_0indexed: 6
+    industry_col_step: 2
+
+indicator_table:
+  sheet: "Table D"
+  table_id: D
+  header_row_0indexed: 5
+  data_start_row_0indexed: 7
+  no_col_0indexed: 0
+  code_col_0indexed: 2
+  label_col_0indexed: 3
+  first_industry_col_0indexed: 4
+  industry_col_step: 2
+
+bridge_table:
+  sheet: "Table E"
+  data_start_row_0indexed: 6
+  code_col_0indexed: 0
+  label_col_0indexed: 1
+  value_col_0indexed: 2

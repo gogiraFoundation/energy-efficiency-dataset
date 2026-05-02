@@ -59,3 +59,21 @@ CREATE TABLE IF NOT EXISTS core_fact_market_share (
     CONSTRAINT core_fact_market_share_uniq
         UNIQUE (year, commodity, company_name)
 );
+
+CREATE TABLE IF NOT EXISTS core_fact_daily_prices (
+    daily_price_id BIGSERIAL PRIMARY KEY,
+    date_id INTEGER REFERENCES core_dim_date(date_id),
+    geography_id BIGINT REFERENCES core_dim_geography(geography_id),
+    period_date DATE NOT NULL,
+    commodity TEXT NOT NULL,
+    source_name TEXT NOT NULL,
+    metric_name TEXT NOT NULL,
+    value NUMERIC,
+    unit TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    CONSTRAINT core_fact_daily_prices_uniq
+        UNIQUE (period_date, commodity, source_name, metric_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_core_fact_daily_prices_period
+    ON core_fact_daily_prices (period_date, commodity, metric_name);

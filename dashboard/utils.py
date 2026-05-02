@@ -1,7 +1,13 @@
-"""Filter builders, CO2 helpers, and small dataframe utilities."""
+"""Filter builders, CO2 helpers, and small dataframe utilities.
+
+For checking whether a table, view, or materialized view exists in PostgreSQL,
+use ``dashboard.db.object_exists`` (includes ``pg_matviews`` and multi-schema search).
+"""
 
 from __future__ import annotations
 
+from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 import pandas as pd
@@ -114,3 +120,52 @@ def composite_vulnerability_rank(
     a = zscore(fuel_poor.fillna(0))
     b = zscore(minutes_lost.fillna(0))
     return a + b
+
+
+@lru_cache(maxsize=1)
+def load_company_mapping_df() -> pd.DataFrame:
+    """Ofgem alias rows under ``metadata/company_mapping.csv`` for dashboard joins."""
+    path = Path(__file__).resolve().parent.parent / "metadata" / "company_mapping.csv"
+    return pd.read_csv(path)
+
+
+def canonical_company_name(
+    raw: str,
+    mapping: pd.DataFrame | None = None,
+    *,
+    prefer_sector: str | None = None,
+) -> str:
+    """Map a workbook or raw label to canonical ``company_name`` when possible."""
+    if mapping is None:
+        mapping = load_company_mapping_df()
+    if pd.isna(raw) or not str(raw).strip():
+        return str(raw)
+    s = str(raw).strip()
+    sl = s.lower()
+    src_l = mapping["source_company_name"].astype(str).str.strip().str.lower()
+    hit = mapping[src_l == sl]
+    if prefer_sector:
+        h2 = hit[hit["network_sector_code"].astype(str) == prefer_sector]
+        if not h2.empty:
+            return str(h2.iloc[0]["company_name"])
+    if not hit.empty:
+        return str(hit.iloc[0]["company_name"])
+    cn = mapping["company_name"].astype(str).str.strip().str.lower()
+    hit3 = mapping[cn == sl]
+    if prefer_sector:
+        h4 = hit3[hit3["network_sector_code"].astype(str) == prefer_sector]
+        if not h4.empty:
+            return str(h4.iloc[0]["company_name"])
+    if not hit3.empty:
+        return str(hit3.iloc[0]["company_name"])
+    return s
+
+
+def apply_canonical_company(
+    names: pd.Series,
+    mapping: pd.DataFrame | None = None,
+    *,
+    prefer_sector: str | None = None,
+) -> pd.Series:
+    m = mapping if mapping is not None else load_company_mapping_df()
+    return names.map(lambda x: canonical_company_name(x, m, prefer_sector=prefer_sector))

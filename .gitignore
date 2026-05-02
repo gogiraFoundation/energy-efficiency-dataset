@@ -51,3 +51,6 @@ dist/
 # secret files
 
 secret.py
+
+# Pipeline / local logs
+log/

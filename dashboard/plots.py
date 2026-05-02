@@ -263,3 +263,76 @@ def fig_to_png_bytes(fig: go.Figure, width: int = 900, height: int = 520) -> byt
         return fig.to_image(format="png", width=width, height=height, scale=1)
     except Exception:
         return None
+
+
+SUMMARY_CHART_HEIGHT = 300
+
+
+def with_compact_height(fig: go.Figure, height: int = SUMMARY_CHART_HEIGHT) -> go.Figure:
+    fig.update_layout(height=height, margin=dict(l=48, r=24, t=44, b=40))
+    return fig
+
+
+def dual_axis_lines_compact(
+    df: pd.DataFrame,
+    x_col: str,
+    y1_col: str,
+    y2_col: str,
+    y1_title: str,
+    y2_title: str,
+    title: str = "",
+    *,
+    height: int = SUMMARY_CHART_HEIGHT,
+) -> go.Figure:
+    return with_compact_height(
+        dual_axis_lines(df, x_col, y1_col, y2_col, y1_title, y2_title, title),
+        height,
+    )
+
+
+def line_simple_compact(
+    df: pd.DataFrame,
+    x_col: str,
+    y_col: str,
+    title: str = "",
+    *,
+    height: int = SUMMARY_CHART_HEIGHT,
+) -> go.Figure:
+    return with_compact_height(line_simple(df, x_col, y_col, title), height)
+
+
+def multi_line_compact(
+    df: pd.DataFrame,
+    x_col: str,
+    value_cols: list[str],
+    title: str = "",
+    *,
+    height: int = SUMMARY_CHART_HEIGHT,
+) -> go.Figure:
+    return with_compact_height(multi_line(df, x_col, value_cols, title), height)
+
+
+def leaderboard_table(
+    df: pd.DataFrame,
+    value_col: str,
+    label_col: str,
+    title: str = "Leaderboard",
+) -> go.Figure:
+    """Simple horizontal leaderboard with rank labels."""
+    fig = go.Figure()
+    if df.empty or value_col not in df.columns or label_col not in df.columns:
+        return apply_default_layout(fig, title)
+    d = df[[label_col, value_col]].dropna().copy().sort_values(value_col, ascending=False).head(20)
+    d["rank"] = range(1, len(d) + 1)
+    fig.add_trace(
+        go.Bar(
+            x=d[value_col],
+            y=d[label_col],
+            orientation="h",
+            text=d["rank"].map(lambda n: f"#{n}"),
+            textposition="outside",
+        )
+    )
+    fig.update_yaxes(autorange="reversed")
+    fig.update_xaxes(title_text=value_col)
+    return apply_default_layout(fig, title)

@@ -41,7 +41,8 @@ def fetch_all_sources(settings: dict, logger) -> None:
         source_id = source["source_id"]
         mode = source.get("fetch_mode", "http")
         default_url = source.get("url")
-        source_ext = _safe_suffix(default_url or "")
+        preferred_ext = f".{str(source.get('default_format', 'csv')).lower().lstrip('.')}"
+        source_ext = _safe_suffix(default_url or "", default_suffix=preferred_ext)
         download_path = raw_dir / f"{source_id}{source_ext}"
         manual_override = override_dir / f"{source_id}{source_ext}"
 

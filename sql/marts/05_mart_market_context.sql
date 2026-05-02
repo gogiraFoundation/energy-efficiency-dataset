@@ -18,19 +18,26 @@ WITH gen_mix AS (
         ctx.fuel_source,
         ctx.value AS fuel_value,
         ctx.unit  AS fuel_unit,
-        SUM(ctx.value) FILTER (WHERE ctx.fuel_source <> 'TOTAL') OVER (PARTITION BY ctx.year, ctx.commodity)
-            AS commodity_total
+        SUM(GREATEST(ctx.value, 0)) FILTER (WHERE ctx.fuel_source <> 'TOTAL') OVER (PARTITION BY ctx.year, ctx.commodity)
+            AS positive_parts_sum
     FROM core_fact_market_context ctx
     WHERE ctx.metric_name IN ('generation_twh','generation_total_twh','gas_supply_mcm_year_sum','gas_supply_total')
+),
+-- Volatility series are ingested with commodity = 'all' (single workbook); join on year only.
+volatility_year AS (
+    SELECT
+        year,
+        AVG(value) FILTER (WHERE metric_name = 'volatility_electricity_baseload') AS elec_baseload_volatility,
+        AVG(value) FILTER (WHERE metric_name = 'volatility_electricity_peakload') AS elec_peakload_volatility,
+        AVG(value) FILTER (WHERE metric_name = 'volatility_gas') AS gas_volatility
+    FROM core_fact_market_prices
+    GROUP BY year
 ),
 prices AS (
     SELECT
         year,
         commodity,
         AVG(value) FILTER (WHERE metric_name = 'gas_day_ahead_price') AS gas_day_ahead_avg_price,
-        AVG(value) FILTER (WHERE metric_name = 'volatility_electricity_baseload') AS elec_baseload_volatility,
-        AVG(value) FILTER (WHERE metric_name = 'volatility_electricity_peakload') AS elec_peakload_volatility,
-        AVG(value) FILTER (WHERE metric_name = 'volatility_gas') AS gas_volatility,
         AVG(value) FILTER (WHERE metric_name = 'spark_spread_central') AS spark_spread_avg,
         AVG(value) FILTER (WHERE metric_name = 'dark_spread') AS dark_spread_avg,
         AVG(value) FILTER (WHERE metric_name = 'power_price_baseload') AS power_baseload_avg,
@@ -60,14 +67,15 @@ SELECT
     g.fuel_source,
     g.fuel_value,
     g.fuel_unit,
-    CASE WHEN g.fuel_source = 'TOTAL' OR g.commodity_total IS NULL OR g.commodity_total = 0
-         THEN NULL
-         ELSE g.fuel_value / g.commodity_total
+    CASE
+        WHEN g.fuel_source = 'TOTAL' OR g.positive_parts_sum IS NULL OR g.positive_parts_sum = 0
+            THEN NULL
+        ELSE GREATEST(g.fuel_value, 0) / g.positive_parts_sum
     END AS fuel_share_of_total,
     p.gas_day_ahead_avg_price,
-    p.elec_baseload_volatility,
-    p.elec_peakload_volatility,
-    p.gas_volatility,
+    v.elec_baseload_volatility,
+    v.elec_peakload_volatility,
+    v.gas_volatility,
     p.spark_spread_avg,
     p.dark_spread_avg,
     p.power_baseload_avg,
@@ -77,8 +85,9 @@ SELECT
     t.churn_ratio_avg,
     NULL::numeric AS market_share_pct_2024
 FROM gen_mix g
-LEFT JOIN prices  p ON p.year = g.year AND p.commodity = g.commodity
-LEFT JOIN trading t ON t.year = g.year AND t.commodity = g.commodity
+LEFT JOIN prices         p ON p.year = g.year AND p.commodity = g.commodity
+LEFT JOIN volatility_year v ON v.year = g.year
+LEFT JOIN trading        t ON t.year = g.year AND t.commodity = g.commodity
 
 UNION ALL
 

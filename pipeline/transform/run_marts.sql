@@ -1,5 +1,9 @@
-\i sql/marts/10_mart_cost_reliability.sql
-\i sql/marts/20_mart_economic_impact.sql
-\i sql/marts/30_mart_cross_commodity_risk.sql
-\i sql/marts/40_mart_regulatory_performance.sql
-\i sql/marts/50_mart_decarbonisation_narrative.sql
+-- ----------------------------------------------------------------------
+-- This file is NOT executed by the pipeline.
+--
+-- The orchestrator loads every numbered script in `sql/marts/` in sorted
+-- order: `python -m pipeline.orchestrate marts` (see `run_sql_folder` in
+-- `pipeline/orchestrate.py`). Retail, cross-layer, WHD, renewables, daily
+-- market, and scheme marts are included there — not only the legacy subset
+-- that used to be listed below.
+-- ----------------------------------------------------------------------
