@@ -88,8 +88,38 @@ SAMPLE_ROWS_BY_SOURCE = {
     ],
     "ons_lcree": [
         {
-            "year": 2021,
-            "lcree_turnover_million_gbp": 48000.0,
+            "year": 2024,
+            "lcree_turnover_million_gbp": 77000.0,
+        }
+    ],
+    "ons_intermediate_consumption": [
+        {
+            "year": 2023,
+            "sic_code": "C",
+            "industry_name": "Manufacturing",
+            "commodity": "energy",
+            "intermediate_consumption_share": 0.18,
+            "intermediate_consumption_value": 16000.0,
+        }
+    ],
+    "ons_gas_sap_daily": [
+        {
+            "date": "2026-04-30",
+            "commodity": "gas",
+            "source_name": "ons_sap_ocm",
+            "metric_name": "system_average_price",
+            "value": 67.2,
+            "unit": "pence_per_therm",
+        }
+    ],
+    "elexon_system_price_daily": [
+        {
+            "date": "2026-04-30",
+            "commodity": "electricity",
+            "source_name": "elexon",
+            "metric_name": "system_price",
+            "value": 81.4,
+            "unit": "gbp_per_mwh",
         }
     ],
 }

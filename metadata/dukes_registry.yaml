@@ -1,0 +1,602 @@
+# DUKES Chapter 1 (Digest of UK Energy Statistics) — DESNZ / GOV.UK
+# Source collection: https://www.gov.uk/government/statistics/energy-chapter-1-digest-of-united-kingdom-energy-statistics-dukes
+# Files are fetched into paths.dukes_dir when missing (see pipeline/config/settings.yaml).
+
+version: dukes_2025_chapter1
+
+# 1 Mtoe ≈ 11.63 TWh (UK energy statistics convention)
+mtoe_to_twh: 11.63
+# 1 ktoe ≈ 0.01163 TWh
+ktoe_to_twh: 0.01163
+
+tables:
+  primary_consumption_gdp:
+    table_id: "1.1.4"
+    url: "https://assets.publishing.service.gov.uk/media/6889eb22a11f8599944091ec/DUKES_1.1.4.xlsx"
+    filename: "DUKES_1.1.4.xlsx"
+    sheet: "1.1.4"
+    header_row_0indexed: 4
+    data_start_row_0indexed: 5
+
+  expenditure_final_user:
+    table_id: "1.1.6"
+    url: "https://assets.publishing.service.gov.uk/media/6889eb3de1a850d72c4091dc/DUKES_1.1.6.xlsx"
+    filename: "DUKES_1.1.6.xlsx"
+    sheet: "1.1.6"
+    header_row_0indexed: 5
+    data_start_row_0indexed: 6
+
+  final_consumption_by_user:
+    table_id: "1.1.5"
+    url: "https://assets.publishing.service.gov.uk/media/6889eb2f8b3a37b63e738fe3/DUKES_1.1.5.xlsx"
+    filename: "DUKES_1.1.5.xlsx"
+    sheets:
+      - sheet: "1.1.5 Industry"
+        sector: Industry
+      - sheet: "1.1.5 Transport"
+        sector: Transport
+      - sheet: "1.1.5 Domestic"
+        sector: Domestic
+      - sheet: "1.1.5 Other Final Users"
+        sector: Other final users
+      - sheet: "1.1.5 All Final Users"
+        sector: All final users
+    header_row_0indexed: 5
+    data_start_row_0indexed: 6
+
+  primary_fuels_mtoe:
+    table_id: "1.1.1.B"
+    url: "https://assets.publishing.service.gov.uk/media/6889eafc76f68cc8414d5b55/DUKES_1.1.1.xlsx"
+    filename: "DUKES_1.1.1.xlsx"
+    sheet: "1.1.1.B"
+    # Row index (0-based) where years appear as column headers
+    header_year_row_0indexed: 6
+    # Fuel rows start after header row
+    data_start_row_0indexed: 7
+
+# -----------------------------------------------------------------------------
+# DUKES Chapter 1 — supplementary (balances, sales, availability; long format → stg_dukes_chapter1_sup)
+# -----------------------------------------------------------------------------
+chapter1_sup:
+  version: dukes_2025_chapter1_sup
+  tables:
+    dukes_1_1:
+      table_id: "1.1"
+      url: "https://assets.publishing.service.gov.uk/media/6889eab08b3a37b63e738fdf/DUKES_1.1.xlsx"
+      filename: "DUKES_1.1.xlsx"
+      parser: commodity_year_sheets
+      sheet_name_regex: "^\\d{4}$"
+      header_row_0indexed: 3
+      data_start_row_0indexed: 4
+      metric_name: commodity_balance_ktoe
+      unit: ktoe
+
+    dukes_1_1_alternative_units:
+      table_id: "1.1au"
+      url: "https://assets.publishing.service.gov.uk/media/688b4c2117af69a639ebe68e/DUKES_1.1_alternative_units.xlsx"
+      filename: "DUKES_1.1_alternative_units.xlsx"
+      parser: aggregate_balance_alternative_units
+      sheet_name_regex: "^\\d{4}$"
+      fuel_header_row_0indexed: 2
+      data_start_row_0indexed: 4
+      block1_col_range: [1, 11]
+      block2_col_range: [17, 27]
+
+    dukes_1_2:
+      table_id: "1.2"
+      url: "https://assets.publishing.service.gov.uk/media/6889eae16478525675738fcc/DUKES_1.2.xlsx"
+      filename: "DUKES_1.2.xlsx"
+      parser: commodity_year_sheets
+      sheet_name_regex: "^\\d{4}$"
+      header_row_0indexed: 2
+      data_start_row_0indexed: 3
+      metric_name: value_balance_million_gbp
+      unit: million_gbp
+
+    dukes_1_3:
+      table_id: "1.3"
+      url: "https://assets.publishing.service.gov.uk/media/6889eaed8b3a37b63e738fe1/DUKES_1.3.xlsx"
+      filename: "DUKES_1.3.xlsx"
+      parser: sales_year_columns
+      # 1.3.A = £m totals; 1.3.B = average net selling value (p/kWh)
+      sheets:
+        - sheet: "1.3.A"
+          metric_name: sales_million_gbp
+          unit: million_gbp
+        - sheet: "1.3.B"
+          metric_name: average_net_selling_value_p_per_kwh
+          unit: pence_per_kwh
+      header_row_0indexed: 4
+      data_start_row_0indexed: 5
+
+    dukes_1_1_2:
+      table_id: "1.1.2"
+      url: "https://assets.publishing.service.gov.uk/media/6889eb088b3a37b63e738fe2/DUKES_1.1.2.xlsx"
+      filename: "DUKES_1.1.2.xlsx"
+      parser: wide_year_rows
+      sheet: "1.1.2"
+      header_row_0indexed: 5
+      data_start_row_0indexed: 6
+      metric_name: primary_fuels_availability_ktoe
+      unit: ktoe
+
+    dukes_1_1_3:
+      table_id: "1.1.3"
+      url: "https://assets.publishing.service.gov.uk/media/6889eb156478525675738fce/DUKES_1.1.3.xlsx"
+      filename: "DUKES_1.1.3.xlsx"
+      parser: simple_year_metrics
+      sheet: "1.1.3"
+      header_row_0indexed: 5
+      data_start_row_0indexed: 6
+      metric_prefix: import_export_balance
+
+    dukes_1_1_1_extra:
+      table_id: "1.1.1.AC"
+      url: "https://assets.publishing.service.gov.uk/media/6889eafc76f68cc8414d5b55/DUKES_1.1.1.xlsx"
+      filename: "DUKES_1.1.1.xlsx"
+      parser: fuel_by_year_matrix
+      sheets:
+        - "1.1.1.A"
+        - "1.1.1.C"
+      header_row_0indexed: 6
+      data_start_row_0indexed: 7
+      metric_name: inland_consumption_by_year
+      unit: mixed
+
+    dukes_I_1:
+      table_id: "I.1"
+      url: "https://assets.publishing.service.gov.uk/media/6889eb4b6478525675738fcf/DUKES_I.1.xlsx"
+      filename: "DUKES_I.1.xlsx"
+      parser: commodity_year_sheets
+      sheet_name_regex: "^\\d{4}$"
+      header_row_0indexed: 3
+      data_start_row_0indexed: 4
+      metric_name: commodity_balance_net_cv_ktoe
+      unit: ktoe
+
+    dukes_J_1:
+      table_id: "J.1"
+      url: "https://assets.publishing.service.gov.uk/media/68a5e0772a1dfc29763d5179/DUKES_J.1.xlsx"
+      filename: "DUKES_J.1.xlsx"
+      parser: commodity_year_sheets
+      sheet_name_regex: "^\\d{4}$"
+      header_row_0indexed: 2
+      data_start_row_0indexed: 3
+      metric_name: heat_sold_reallocation
+      unit: mixed
+
+# -----------------------------------------------------------------------------
+# DUKES Chapter 4 — Natural gas
+# https://www.gov.uk/government/statistics/natural-gas-chapter-4-digest-of-united-kingdom-energy-statistics-dukes
+# -----------------------------------------------------------------------------
+chapter4:
+  version: dukes_2025_chapter4
+  tables:
+    dukes_4_1:
+      table_id: "4.1"
+      url: "https://assets.publishing.service.gov.uk/media/688a094a6478525675738ffa/DUKES_4.1.xlsx"
+      filename: "DUKES_4.1.xlsx"
+      parser: ch4_carryforward
+      sheets:
+        - "4.1"
+      metric_name: natural_gas_commodity_balance_gwh
+      unit: GWh
+
+    dukes_4_2:
+      table_id: "4.2"
+      url: "https://assets.publishing.service.gov.uk/media/688a0954a11f85999440922f/DUKES_4.2.xlsx"
+      filename: "DUKES_4.2.xlsx"
+      parser: ch4_year_in_columns
+      sheet: "4.2"
+      header_row_0indexed: 5
+      data_start_row_0indexed: 6
+      metric_name: colliery_methane_gwh
+      unit: GWh
+
+    dukes_4_3:
+      table_id: "4.3"
+      url: "https://assets.publishing.service.gov.uk/media/688a095e6478525675738ffb/DUKES_4.3.xlsx"
+      filename: "DUKES_4.3.xlsx"
+      parser: ch4_carryforward
+      sheets:
+        - "4.3"
+      metric_name: uk_gas_losses_gwh
+      unit: GWh
+
+    dukes_4_4a:
+      table_id: "4.4a"
+      url: "https://assets.publishing.service.gov.uk/media/688a0969a11f859994409231/DUKES_4.4.xlsx"
+      filename: "DUKES_4.4.xlsx"
+      parser: ch4_carryforward
+      sheets:
+        - "4.4a"
+      metric_name: gas_stock_storage_gwh
+      unit: GWh
+
+    dukes_4_4b:
+      table_id: "4.4b"
+      url: "https://assets.publishing.service.gov.uk/media/688a0969a11f859994409231/DUKES_4.4.xlsx"
+      filename: "DUKES_4.4.xlsx"
+      parser: ch4_station_register
+      metric_name: gas_storage_site_register
+      unit: mixed
+      sheet_configs:
+        - sheet: "4.4b"
+          snapshot_year: 2025
+          header_row_0indexed: 5
+          data_start_row_0indexed: 6
+          row_label_cols: [0]
+          text_columns: true
+
+    dukes_4_5a:
+      table_id: "4.5a"
+      url: "https://assets.publishing.service.gov.uk/media/688a09778b3a37b63e739018/DUKES_4.5.xlsx"
+      filename: "DUKES_4.5.xlsx"
+      parser: ch4_carryforward
+      sheets:
+        - "4.5a"
+      metric_name: gas_imports_exports_gwh
+      unit: GWh
+
+    dukes_4_5b:
+      table_id: "4.5b"
+      url: "https://assets.publishing.service.gov.uk/media/688a09778b3a37b63e739018/DUKES_4.5.xlsx"
+      filename: "DUKES_4.5.xlsx"
+      parser: ch4_station_register
+      metric_name: gas_import_export_facility_register
+      unit: mixed
+      sheet_configs:
+        - sheet: "4.5b"
+          snapshot_year: 2025
+          header_row_0indexed: 5
+          data_start_row_0indexed: 6
+          row_label_cols: [0]
+          text_columns: true
+
+    dukes_4_6:
+      table_id: "4.6"
+      url: "https://assets.publishing.service.gov.uk/media/688a09826478525675738ffd/DUKES_4.6.xlsx"
+      filename: "DUKES_4.6.xlsx"
+      parser: ch4_carryforward
+      sheets:
+        - "4.6"
+      metric_name: lng_imports_by_terminal_gwh
+      unit: GWh
+
+    dukes_4_1_1:
+      table_id: "4.1.1"
+      url: "https://assets.publishing.service.gov.uk/media/688a099276f68cc8414d5b83/DUKES_4.1.1.xlsx"
+      filename: "DUKES_4.1.1.xlsx"
+      parser: ch4_wide_year_rows
+      sheets:
+        - "Methane"
+        - "Town gas"
+      header_row_0indexed: 5
+      data_start_row_0indexed: 6
+      metric_name: methane_town_gas_series_gwh
+      unit: GWh
+
+    dukes_E_1:
+      table_id: "E.1"
+      url: "https://assets.publishing.service.gov.uk/media/688a099fe1a850d72c409207/DUKES_E.1.xlsx"
+      filename: "DUKES_E.1.xlsx"
+      parser: ch4_carryforward
+      sheets:
+        - "E.1"
+      metric_name: gas_flared_vented_mcm
+      unit: million_cubic_metres
+
+    dukes_F_2:
+      table_id: "F.2"
+      url: "https://assets.publishing.service.gov.uk/media/688a09ace1a850d72c409208/DUKES_F.2.xlsx"
+      filename: "DUKES_F.2.xlsx"
+      parser: ch4_wide_total_years
+      sheet: "F.2"
+      header_row_0indexed: 5
+      data_start_row_0indexed: 6
+      metric_name: gas_production_field_terminal_mcm
+      unit: million_cubic_metres
+      cumulative_metric_suffix: cumulative_to_end_1998
+
+# -----------------------------------------------------------------------------
+# DUKES Chapter 5 — Electricity
+# https://www.gov.uk/government/statistics/electricity-chapter-5-digest-of-united-kingdom-energy-statistics-dukes
+# -----------------------------------------------------------------------------
+chapter5:
+  version: dukes_2025_chapter5
+  tables:
+    dukes_5_1:
+      table_id: "5.1"
+      url: "https://assets.publishing.service.gov.uk/media/688a2873a11f859994409277/DUKES_5.1.xlsx"
+      filename: "DUKES_5.1.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.1"
+        - "5.1.A"
+      metric_name: electricity_commodity_balance_gwh
+      unit: GWh
+
+    dukes_5_2:
+      table_id: "5.2"
+      url: "https://assets.publishing.service.gov.uk/media/688a287f8b3a37b63e739063/DUKES_5.2.xlsx"
+      filename: "DUKES_5.2.xlsx"
+      parser: ch5_embedded_year_headers
+      sheet: "5.2"
+      header_row_0indexed: 4
+      data_start_row_0indexed: 5
+      metric_name: pds_other_generators_balance_gwh
+      unit: GWh
+
+    dukes_5_3:
+      table_id: "5.3"
+      url: "https://assets.publishing.service.gov.uk/media/688a288b6478525675739052/DUKES_5.3.xlsx"
+      filename: "DUKES_5.3.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.3"
+      metric_name: fuel_used_in_generation
+      unit: mixed
+
+    dukes_5_4:
+      table_id: "5.4"
+      url: "https://assets.publishing.service.gov.uk/media/688a28986478525675739053/DUKES_5.4.xlsx"
+      filename: "DUKES_5.4.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.4"
+        - "5.4.A"
+      metric_name: autogeneration_fuels
+      unit: mixed
+
+    dukes_5_5:
+      table_id: "5.5"
+      url: "https://assets.publishing.service.gov.uk/media/688a28a576f68cc8414d5bd0/DUKES_5.5.xlsx"
+      filename: "DUKES_5.5.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.5"
+      metric_name: supply_net_available_sales_gwh
+      unit: GWh
+
+    dukes_5_6:
+      table_id: "5.6"
+      url: "https://assets.publishing.service.gov.uk/media/688a31dda11f859994409290/DUKES_5.6.xlsx"
+      filename: "DUKES_5.6.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.6"
+        - "5.6 Conventional thermal & CCGT"
+        - "5.6 Annual summaries"
+      metric_name: fuel_use_generation_supply_gwh
+      unit: GWh
+
+    dukes_5_7:
+      table_id: "5.7"
+      url: "https://assets.publishing.service.gov.uk/media/688a28b38b3a37b63e739064/DUKES_5.7.xlsx"
+      filename: "DUKES_5.7.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.7"
+      metric_name: plant_capacity_uk_mw
+      unit: MW
+
+    dukes_5_8:
+      table_id: "5.8"
+      url: "https://assets.publishing.service.gov.uk/media/688a28bea11f859994409278/DUKES_5.8.xlsx"
+      filename: "DUKES_5.8.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.8"
+      metric_name: mpp_capacity_region_mw
+      unit: MW
+
+    dukes_5_9:
+      table_id: "5.9"
+      url: "https://assets.publishing.service.gov.uk/media/688a28c9a11f859994409279/DUKES_5.9.xlsx"
+      filename: "DUKES_5.9.xlsx"
+      parser: ch5_year_in_columns
+      sheet: "5.9"
+      header_row_0indexed: 4
+      data_start_row_0indexed: 5
+      metric_name: other_generators_capacity_mw
+      unit: MW
+
+    dukes_5_10:
+      table_id: "5.10"
+      url: "https://assets.publishing.service.gov.uk/media/688a28d6a11f85999440927a/DUKES_5.10.xlsx"
+      filename: "DUKES_5.10.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.10.A"
+        - "5.10.B and 5.10.C"
+      metric_name: plant_loads_demand_efficiency
+      unit: mixed
+
+    dukes_5_11:
+      table_id: "5.11"
+      url: "https://assets.publishing.service.gov.uk/media/688cb64ee8ba9507fc1b0953/DUKES_5.11.xlsx"
+      filename: "DUKES_5.11.xlsx"
+      parser: ch5_station_register
+      metric_name: mpp_station_register
+      unit: mixed
+      sheet_configs:
+        - sheet: "5.11 Summary"
+          snapshot_year: 2025
+          header_row_0indexed: 6
+          data_start_row_0indexed: 7
+          row_label_cols: [0, 1]
+          text_columns: true
+        - sheet: "5.11 Full list"
+          snapshot_year: 2025
+          header_row_0indexed: 5
+          data_start_row_0indexed: 6
+          row_label_cols: [0, 1]
+          text_columns: true
+      sheet_name_regex: "^DUKES \\d{4}$"
+      regex_sheet_defaults:
+        header_row_0indexed: 5
+        data_start_row_0indexed: 6
+        row_label_cols: [0, 1]
+        text_columns: true
+
+    dukes_5_12:
+      table_id: "5.12"
+      url: "https://assets.publishing.service.gov.uk/media/688a2908e1a850d72c40924f/DUKES_5.12.xlsx"
+      filename: "DUKES_5.12.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.12"
+      metric_name: installed_capacity_by_connection_mw
+      unit: MW
+
+    dukes_5_13:
+      table_id: "5.13"
+      url: "https://assets.publishing.service.gov.uk/media/688a29166478525675739054/DUKES_5.13.xlsx"
+      filename: "DUKES_5.13.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.13"
+        - "5.13A"
+      metric_name: interconnectors_capacity_imports_gwh
+      unit: mixed
+
+    dukes_5_14:
+      table_id: "5.14"
+      url: "https://assets.publishing.service.gov.uk/media/688a2923a11f85999440927c/DUKES_5.14.xlsx"
+      filename: "DUKES_5.14.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.14"
+      metric_name: co2_intensity_electricity_g_per_kwh
+      unit: grammes_co2_per_kwh
+
+    dukes_5_15:
+      table_id: "5.15"
+      url: "https://assets.publishing.service.gov.uk/media/688a2931a11f85999440927d/DUKES_5.15.xlsx"
+      filename: "DUKES_5.15.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.15"
+      metric_name: chp_generation_capacity
+      unit: mixed
+
+    dukes_5_16:
+      table_id: "5.16"
+      url: "https://assets.publishing.service.gov.uk/media/688a293e6478525675739055/DUKES_5.16.xlsx"
+      filename: "DUKES_5.16.xlsx"
+      parser: ch5_carryforward
+      sheets:
+        - "5.16"
+      metric_name: energy_storage_overview
+      unit: mixed
+
+    dukes_5_1_1:
+      table_id: "5.1.1"
+      url: "https://assets.publishing.service.gov.uk/media/688a2975048fff613a4d5bd5/DUKES_5.1.1.xlsx"
+      filename: "DUKES_5.1.1.xlsx"
+      parser: ch5_wide_year_rows
+      sheet: "5.1.1"
+      header_row_0indexed: 4
+      data_start_row_0indexed: 5
+      metric_name: fuel_input_generation_mtoe
+      unit: Mtoe
+
+    dukes_5_1_2:
+      table_id: "5.1.2"
+      url: "https://assets.publishing.service.gov.uk/media/688a29846478525675739056/DUKES_5.1.2.xlsx"
+      filename: "DUKES_5.1.2.xlsx"
+      parser: ch5_wide_year_rows
+      sheet: "5.1.2"
+      header_row_0indexed: 4
+      data_start_row_0indexed: 5
+      metric_name: supply_availability_consumption_gwh
+      unit: GWh
+
+    dukes_5_1_3:
+      table_id: "5.1.3"
+      url: "https://assets.publishing.service.gov.uk/media/688a29918b3a37b63e739065/DUKES_5.1.3.xlsx"
+      filename: "DUKES_5.1.3.xlsx"
+      parser: ch5_wide_year_rows
+      sheet: "5.1.3"
+      header_row_0indexed: 4
+      data_start_row_0indexed: 5
+      metric_name: generated_supplied_gwh
+      unit: GWh
+
+# -----------------------------------------------------------------------------
+# DUKES Chapter 6 — Renewable sources of energy
+# https://www.gov.uk/government/statistics/renewable-sources-of-energy-chapter-6-digest-of-united-kingdom-energy-statistics-dukes
+# -----------------------------------------------------------------------------
+chapter6:
+  version: dukes_2025_chapter6
+  tables:
+    dukes_6_1:
+      table_id: "6.1"
+      url: "https://assets.publishing.service.gov.uk/media/688a19506478525675739025/DUKES_6.1.xlsx"
+      filename: "DUKES_6.1.xlsx"
+      parser: commodity_year_sheets
+      sheet_name_regex: "^\\d{4}$"
+      header_row_0indexed: 4
+      data_start_row_0indexed: 5
+      metric_name: commodity_balance_ktoe
+      unit: ktoe
+
+    dukes_6_2:
+      table_id: "6.2"
+      url: "https://assets.publishing.service.gov.uk/media/688a195a6478525675739026/DUKES_6.2.xlsx"
+      filename: "DUKES_6.2.xlsx"
+      parser: multi_section_year_columns
+      sheet: "6.2"
+
+    dukes_6_3:
+      table_id: "6.3"
+      url: "https://assets.publishing.service.gov.uk/media/68a5896d50939bdf2c2b5ee3/DUKES_6.3.xlsx"
+      filename: "DUKES_6.3.xlsx"
+      parser: multi_section_year_columns
+      sheet: "6.3"
+
+    dukes_6_4:
+      table_id: "6.4"
+      url: "https://assets.publishing.service.gov.uk/media/688a19708b3a37b63e739037/DUKES_6.4.xlsx"
+      filename: "DUKES_6.4.xlsx"
+      parser: multi_section_year_columns_6_4
+      sheet: "6.4"
+
+    dukes_6_5:
+      table_id: "6.5"
+      url: "https://assets.publishing.service.gov.uk/media/688a197d76f68cc8414d5ba3/DUKES_6.5.xlsx"
+      filename: "DUKES_6.5.xlsx"
+      parser: dukes_6_5_bundle
+      sheets_summary:
+        - sheet: "6.5a"
+        - sheet: "6.5b"
+      sheets_detail_regex: "^\\d{4}$"
+      header_summary_row_0indexed: 4
+      detail_year_row_0indexed: 5
+      detail_data_start_0indexed: 6
+      metric_detail_ktoe: gfc_balance_ktoe
+      metric_detail_pct: gfc_renewables_share_pct
+
+    dukes_6_6:
+      table_id: "6.6"
+      url: "https://assets.publishing.service.gov.uk/media/688a198b048fff613a4d5bb0/DUKES_6.6.xlsx"
+      filename: "DUKES_6.6.xlsx"
+      parser: overseas_trade_by_country
+      sheets:
+        - "6.6.A"
+        - "6.6.B"
+        - "6.6.C"
+        - "6.6.D"
+        - "6.6.E"
+
+    dukes_6_7:
+      table_id: "6.7"
+      url: "https://assets.publishing.service.gov.uk/media/688a21f7e1a850d72c409242/DUKES_6.7.xlsx"
+      filename: "DUKES_6.7.xlsx"
+      parser: station_counts_snapshot
+      sheet: "6.7"
+      header_row_0indexed: 3
+      data_start_row_0indexed: 4
+      snapshot_year: 2024
+      metric_name: station_count
+      unit: count

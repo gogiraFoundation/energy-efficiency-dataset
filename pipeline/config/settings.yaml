@@ -11,6 +11,9 @@ database:
 
 paths:
   raw_dir: raw
+  portal_extract_dir: data/ofgem_portal_extracted
+  dukes_dir: dukes
+  pefa_dir: pefa
   override_dir: raw/override
   archive_dir: raw/archive
   temp_dir: tmp
@@ -24,6 +27,7 @@ pipeline:
 
 sources:
   registry_file: metadata/source_registry.yaml
+  portal_downloads_file: metadata/ofgem_portal_downloads.yaml
   company_mapping_file: metadata/company_mapping.csv
   geography_mapping_file: metadata/geography_mapping.csv
   sic_mapping_file: metadata/sic_mapping.csv

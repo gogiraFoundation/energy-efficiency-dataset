@@ -106,15 +106,22 @@ files:
     metric_map_substring: true
     unit: percent
 
+  # Portal exports alternate between multi-year "Year 1 … Year 8" sheets and a
+  # single **Length of installations (km)** snapshot (two-column table). The
+  # snapshot layout must use columnar_snapshot; register snapshot_year **2019**
+  # so the dashboard lag merge (undergrounding Y vs ED CML Y+1) lines up with
+  # Customer_interruptions… ED1 which uses snapshot_year **2020** for minutes_lost.
+  # If Ofgem ships Year N columns again, switch back to wide_period_metric + Year regex.
   - file: Undergrounding_of_overhead_lines_Electricity_distribution_RIIO-ED1.xlsx
     raw_table: raw_xlsx_undergrounding
     network_sector: Electricity Distribution
     scheme: ED1
     parser: columnar_snapshot
-    snapshot_year: 2023
+    snapshot_year: 2019
     entity_column_index: 0
     metric_map:
-      "Length of installations (km)": undergrounding_km
+      "Length of installations": undergrounding_km
+    metric_map_substring: true
     unit: km
 
   # ============================================================
@@ -346,7 +353,9 @@ files:
     network_sector: Gas Distribution
     scheme: GD1
     parser: columnar_snapshot
-    snapshot_year: 2021
+    # Align with Gas_distribution gas-lost workbook: latest FY column is often 19/20
+    # → calendar **2020** (fy_label_to_end_year). Was 2021 and produced no (company,year) overlap.
+    snapshot_year: 2020
     entity_column_index: 0
     metric_map:
       "Proportionate risk reduction": gas_risk_reduction_target
@@ -1234,6 +1243,18 @@ files:
       "Current Period": {metric_name: minor_incidents_current}
     unit: count
 
+  - file: Major_incidents.xlsx
+    data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
+    raw_table: raw_xlsx_retail_snapshot
+    parser: category_aspect_snapshot
+    snapshot_year: 2024
+    entity_role: supplier
+    entity_column_index: 0
+    column_dimension_map:
+      "Historical":     {metric_name: major_incidents_historical}
+      "Current Period": {metric_name: major_incidents_current}
+    unit: count
+
   # ----- Customer satisfaction & NPS -----
   - file: Customer_satisfaction_Billing_GB.xlsx
     data_dir: data/ofgem_data_portal_xlsx_facet_1609_supply_retail
@@ -1441,3 +1462,173 @@ files:
       "Ground Source Heat Pump": {component: ground_source_heat_pump}
       "Solar Thermal":           {component: solar_thermal}
     unit: count
+
+  # ============================================================
+  # RENEWABLES (MCS-style deployment) -> raw_xlsx_renewables
+  # ============================================================
+  # Drop the source files into data/renewables_mcs/ (see data/renewables_mcs/README.txt
+  # for the exact filenames). The loader skips missing files with a warning, so any
+  # subset of these entries can be left unfulfilled until the workbooks land.
+
+  - file: Total_installed_capacity_kW_by_technology_type.xlsx
+    data_dir: data/renewables_mcs
+    sheet_name: 0
+    raw_table: raw_xlsx_renewables
+    parser: tech_period_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: capacity_kw
+    skip_columns: ["Total"]
+    unit: kW
+
+  - file: Installations_by_technology_type.xlsx
+    data_dir: data/renewables_mcs
+    sheet_name: 0
+    raw_table: raw_xlsx_renewables
+    parser: tech_period_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: installations
+    skip_columns: ["Total"]
+    unit: count
+
+  - file: Installations_by_technology_per_quarter_non_cumulative.xlsx
+    data_dir: data/renewables_mcs
+    sheet_name: 0
+    raw_table: raw_xlsx_renewables
+    parser: tech_period_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: installations
+    skip_columns: ["Total"]
+    unit: count
+
+  - file: Capacity_kW_by_technology_per_quarter.xlsx
+    data_dir: data/renewables_mcs
+    sheet_name: 0
+    raw_table: raw_xlsx_renewables
+    parser: tech_period_matrix
+    period_kind: quarterly
+    entity_column_index: 0
+    metric_name: capacity_kw
+    skip_columns: ["Total"]
+    unit: kW
+
+  - file: Regional_breakdown_of_share_of_installations_and_TIC.xlsx
+    data_dir: data/renewables_mcs
+    sheet_name: 0
+    raw_table: raw_xlsx_renewables
+    parser: tech_period_matrix
+    period_kind: year
+    entity_column_index: 0
+    snapshot_year: 2024
+    metric_name: share_pct
+    column_dimension_map:
+      "England":          {region: England}
+      "Wales":            {region: Wales}
+      "Scotland":         {region: Scotland}
+      "Northern Ireland": {region: Northern_Ireland}
+    unit: percent
+
+  - file: Total_installed_capacity_kW_by_installation_type.xlsx
+    data_dir: data/renewables_mcs
+    sheet_name: 0
+    raw_table: raw_xlsx_renewables
+    parser: tech_period_matrix
+    period_kind: year
+    entity_column_index: 0
+    metric_name: capacity_kw
+    column_dimension_map:
+      "Domestic":     {installation_type: domestic}
+      "Non-Domestic": {installation_type: non_domestic}
+      "Commercial":   {installation_type: commercial}
+      "Industrial":   {installation_type: industrial}
+    column_dimension_substring: true
+    unit: kW
+
+  # ============================================================
+  # WARM HOME DISCOUNT (WHD) -> raw_xlsx_whd
+  # ============================================================
+  # Drop the workbooks into data/whd/. The scheme-year column on the left
+  # is parsed via the whd_scheme_year_matrix parser into both scheme_year
+  # (1..N) and calendar_year (April-March end year).
+
+  - file: WHD_distribution_of_expenditure_by_year_England_and_Wales.xlsx
+    data_dir: data/whd
+    raw_table: raw_xlsx_whd
+    parser: whd_scheme_year_matrix
+    entity_column_index: 0
+    nation: "England and Wales"
+    metric_name: expenditure_pct
+    unit: percent
+
+  - file: WHD_distribution_of_expenditure_by_year_Scotland.xlsx
+    data_dir: data/whd
+    raw_table: raw_xlsx_whd
+    parser: whd_scheme_year_matrix
+    entity_column_index: 0
+    nation: Scotland
+    metric_name: expenditure_pct
+    unit: percent
+
+  - file: WHD_scheme_value_since_2002.xlsx
+    data_dir: data/whd
+    raw_table: raw_xlsx_whd
+    parser: whd_scheme_year_matrix
+    entity_column_index: 0
+    nation: GB
+    metric_name: scheme_value_mgbp
+    unit: million_GBP
+
+  - file: WHD_supplier_obligation_methods_since_2002.xlsx
+    data_dir: data/whd
+    raw_table: raw_xlsx_whd
+    parser: whd_scheme_year_matrix
+    entity_column_index: 0
+    metric_name: obligation_amount_mgbp
+    column_dimension_map:
+      "Core rebate":            {obligation_method: core_rebate}
+      "Industry Initiatives":   {obligation_method: industry_initiatives}
+      "Industry initiatives":   {obligation_method: industry_initiatives}
+      "Spending":               {obligation_method: spending}
+      "Direct spend":           {obligation_method: direct_spend}
+    column_dimension_substring: true
+    unit: million_GBP
+
+  - file: WHD_funds_redistributed_to_suppliers_since_2002.xlsx
+    data_dir: data/whd
+    raw_table: raw_xlsx_whd
+    parser: whd_scheme_year_matrix
+    entity_column_index: 0
+    metric_name: redistributed_mgbp
+    unit: million_GBP
+
+# -----------------------------------------------------------------------------
+# Policy / scheme metrics -> raw_xlsx_scheme_metric (optional portal files)
+#
+# Parsers:
+#   scheme_metric_long :
+#       Like time_series_long: col 0 = period (date or year), remaining cols are
+#       metrics. Requires scheme_key and metric_map (column headers -> metric names).
+#   scheme_period_supplier_matrix :
+#       Like period_supplier_matrix: col 0 = period; each other column is an entity
+#       (supplier / energy company). Uses metric_name for the measure in cells.
+#
+# Example (place workbook under data/ofgem_data_portal_xlsx/ then uncomment):
+# - file: Boiler_Upgrade_Scheme_monthly_applications_and_vouchers.xlsx
+#   raw_table: raw_xlsx_scheme_metric
+#   parser: scheme_metric_long
+#   scheme_key: BUS
+#   date_format: month_year_short
+#   metric_map:
+#     "Applications submitted": applications_submitted
+#     "Vouchers issued": vouchers_issued
+#   unit: count
+#
+# - file: ECO3_supplier_obligation_progress.xlsx
+#   raw_table: raw_xlsx_scheme_metric
+#   parser: scheme_period_supplier_matrix
+#   scheme_key: ECO3
+#   period_kind: year
+#   metric_name: obligation_progress_pct
+#   unit: percent

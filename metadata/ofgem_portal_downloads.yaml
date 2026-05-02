@@ -1,0 +1,37 @@
+# Curated Ofgem Data Portal / everviz chart downloads for automated fetch.
+# ``fetch_ofgem_portal`` pulls embed HTML and extracts embedded CSV from Highcharts options.
+#
+# Chart IDs match everviz slugs from Ofgem pages, e.g. retail market indicators:
+#   https://www.ofgem.gov.uk/news-and-insight/data/data-portal/retail-market-indicators
+# Customer service (FIT complaints):
+#   https://www.ofgem.gov.uk/news-and-insight/data/data-portal/customer-service-data
+# Renewables Obligation public reports:
+#   https://www.ofgem.gov.uk/renewables-obligation-ro/contacts-guidance-and-resources/public-reports-and-data-ro
+
+defaults:
+  embed_base_url: https://app.everviz.com/embed
+
+charts:
+  # --- Retail: domestic fixed-DD credit balances ---
+  - chart_id: c_y_Dm7Rx
+    description: Gross energy customer credit balance for live fixed Direct Debit domestic accounts (£ billions)
+  - chart_id: fpptIG0Jf
+    description: Average gross energy customer credit balance per household (fixed DD)
+  - chart_id: 6EgYhkmDg
+    description: Quartiles of energy customer credit balances (fixed DD, live accounts)
+
+  # --- Retail: Feed-in Tariff complaints (per supplier) ---
+  - chart_id: 967faU9lS
+    description: Feed-in Tariff complaints per 1000 Feed-in Tariff accounts
+
+  # --- Renewables Obligation ---
+  - chart_id: M3eryTIgn
+    description: ROCs issued by technology and obligation period since 2007
+  - chart_id: 1PVEsSF5h
+    description: ROCs issued each month since 2007
+  - chart_id: qVunmJEFF
+    description: Total accredited capacity by technology type since 2007 (MW)
+  - chart_id: g6Gow9Uf8
+    description: Number of accredited stations since April 2002 (cumulative)
+  - chart_id: fhZjZWpFM
+    description: Number of accredited stations over 50kW since 2002 (cumulative)

@@ -1,5 +1,6 @@
 source_system,source_company_name,ofgem_company_id,company_name,network_sector_code,owner_group
 ofgem,National Grid Electricity Transmission,NGET,National Grid Electricity Transmission,ET,National Grid
+ofgem,NGET,NGET,National Grid Electricity Transmission,ET,National Grid
 ofgem,National Grid Electricity Tran,NGET,National Grid Electricity Transmission,ET,National Grid
 ofgem,Scottish Hydro Electric Transmission,SHET,Scottish Hydro Electric Transmission,ET,SSEN
 ofgem,Scottish Hydro Electricity Transmission,SHET,Scottish Hydro Electric Transmission,ET,SSEN
@@ -49,6 +50,7 @@ ofgem,SPEN,SPEN,SP Energy Networks,ED,SP Energy Networks
 ofgem,SPEN-SPD,SPEN-SPD,SP Distribution,ED,SP Energy Networks
 ofgem,SPEN-SPM,SPEN-SPM,SP Manweb,ED,SP Energy Networks
 ofgem,Scottish and Southern Electricity Networks,SSEN-D,SSEN Distribution,ED,SSEN
+ofgem,Scottish & Southern Electricity Networks,SSEN-D,SSEN Distribution,ED,SSEN
 ofgem,SSEN,SSEN-D,SSEN Distribution,ED,SSEN
 ofgem,SSEN-SEPD,SSEN-SEPD,SSEN Southern Electric Power Distribution,ED,SSEN
 ofgem,SSEN-SHEPD,SSEN-SHEPD,SSEN Scottish Hydro Electric Power Distribution,ED,SSEN

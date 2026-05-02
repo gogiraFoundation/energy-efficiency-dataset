@@ -60,14 +60,14 @@ sources:
     description: kWh per GBP GVA by SIC industry group.
 
   - source_id: ons_sector_fuel_use
-    name: ONS energy use by industry and fuel type
+    name: "ONS Energy use: total (industry)"
     domain: ons
-    default_format: csv
+    default_format: xlsx
     frequency: annual
-    fetch_mode: http
-    url: https://www.ons.gov.uk/
+    fetch_mode: manual
+    url: https://www.ons.gov.uk/economy/environmentalaccounts/datasets/ukenvironmentalaccountstotalenergyconsumptionbyindustry
     raw_table: raw_ons_sector_fuel_use
-    description: Electricity and gas split by industry.
+    description: UK direct/reallocated energy use by SIC section (1990-2023); transform into electricity_pct/gas_pct contract before load_raw.
 
   - source_id: ons_regional_gva
     name: ONS regional GVA by industry
@@ -82,9 +82,39 @@ sources:
   - source_id: ons_lcree
     name: ONS Low Carbon Renewable Energy Economy
     domain: ons
-    default_format: csv
+    default_format: xlsx
     frequency: annual
-    fetch_mode: http
-    url: https://www.ons.gov.uk/
+    fetch_mode: manual
+    url: https://www.ons.gov.uk/economy/environmentalaccounts/datasets/lowcarbonandrenewableenergyeconomyfirstestimatesdataset
     raw_table: raw_ons_lcree
     description: LCREE turnover used for narrative context only.
+
+  - source_id: ons_intermediate_consumption
+    name: ONS Intermediate consumption proportions by industry
+    domain: ons
+    default_format: xlsx
+    frequency: annual
+    fetch_mode: http
+    url: https://www.ons.gov.uk/file?uri=/economy/nationalaccounts/supplyandusetables/datasets/inputoutputsupplyandusetables/current/previous/v17/supublicationtablesbb24.xlsx
+    raw_table: raw_ons_intermediate_consumption
+    description: Input-output intermediate consumption shares by industry and commodity.
+
+  - source_id: ons_gas_sap_daily
+    name: ONS System Average Price (SAP) of gas
+    domain: ons
+    default_format: xlsx
+    frequency: daily
+    fetch_mode: http
+    url: https://www.ons.gov.uk/file?uri=/economy/economicoutputandproductivity/output/datasets/systemaveragepricesapofgas/2026/previous/v16/systemaveragepriceofgasdataset230426.xlsx
+    raw_table: raw_daily_market_prices
+    description: Daily gas SAP and rolling seven-day averages from OCM trades.
+
+  - source_id: elexon_system_price_daily
+    name: Elexon electricity System Price daily extract
+    domain: elexon
+    default_format: csv
+    frequency: daily
+    fetch_mode: manual
+    url: https://developer.data.elexon.co.uk/
+    raw_table: raw_daily_market_prices
+    description: Daily electricity system price extracted from Elexon Insights datasets.
