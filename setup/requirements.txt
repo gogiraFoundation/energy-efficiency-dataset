@@ -8,7 +8,7 @@ requests==2.32.3
 python-dotenv==1.0.1
 
 # Optional analytics / dashboard layer
-streamlit==1.39.0
+streamlit>=1.60,<2
 matplotlib==3.9.2
 seaborn==0.13.2
 scikit-learn==1.5.2
