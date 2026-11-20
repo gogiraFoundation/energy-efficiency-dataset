@@ -54,3 +54,6 @@ secret.py
 
 # Pipeline / local logs
 log/
+# Kaggle API credentials
+kaggle.json
+.kaggle/
